@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from smolagents import tool
 
 from agent import build_agent, ask
+from tools.search_tools import web_search
 
 MOCK_PINS = """Friday Night Lights SEP/4th
 Spec 01:
@@ -63,23 +64,16 @@ def mock_get_guild_events(guild_id: str) -> str:
     return MOCK_EVENTS
 
 
-@tool
-def mock_web_search(query: str) -> str:
-    """Search the web for information about Gran Turismo 7 or Forza Motorsport — car lists, performance points, tuning limits, track availability, etc. Reliable sources include gtplanet.net, gran-turismo.com, gt7.fandom.com, forza.fandom.com, and forzamotorsport.net.
-
-    Args:
-        query: The search query string.
-    """
-    return f"[mock] Web search results for: {query}\nNo live results in mock mode."
-
 
 def main():
     parser = argparse.ArgumentParser(description="Test the sim racing bot locally.")
     parser.add_argument("question", help="Question to ask the bot")
-    parser.add_argument("--mock", action="store_true", help="Use mock tools (no Discord token required)")
+    parser.add_argument("--mock", action="store_true", help="Use mock Discord tools (real web search still runs)")
     parser.add_argument("--channel-id", default="000000000000000000", help="Discord channel ID")
     parser.add_argument("--guild-id", default="000000000000000000", help="Discord guild ID")
     args = parser.parse_args()
+
+    load_dotenv()
 
     if args.mock:
         print("Mode: MOCK (no Discord token required)\n")
@@ -87,10 +81,9 @@ def main():
             mock_get_channel_pins,
             mock_get_recent_messages,
             mock_get_guild_events,
-            mock_web_search,
+            web_search,
         ])
     else:
-        load_dotenv()
         if not os.environ.get("DISCORD_TOKEN"):
             print("Error: DISCORD_TOKEN not set. Copy .env.example to .env and fill it in, or use --mock.")
             raise SystemExit(1)
