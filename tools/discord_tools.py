@@ -1,7 +1,10 @@
-from smolagents import tool
+import logging
 import os
 import requests
 from datetime import datetime
+from smolagents import tool
+
+logger = logging.getLogger(__name__)
 
 DISCORD_API = "https://discord.com/api/v10"
 
@@ -22,7 +25,8 @@ def get_channel_pins(channel_id: str) -> str:
     """
     resp = requests.get(f"{DISCORD_API}/channels/{channel_id}/pins", headers=_headers())
     if resp.status_code != 200:
-        return f"Error fetching pins: {resp.status_code} {resp.text}"
+        logger.error("get_channel_pins failed: %s %s", resp.status_code, resp.text)
+        raise RuntimeError(f"Error fetching pins: {resp.status_code} {resp.text}")
     pins = resp.json()
     if not pins:
         return "No pinned messages found in this channel."
@@ -55,7 +59,8 @@ def get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") 
         params={"limit": limit},
     )
     if resp.status_code != 200:
-        return f"Error fetching messages: {resp.status_code} {resp.text}"
+        logger.error("get_recent_messages failed: %s %s", resp.status_code, resp.text)
+        raise RuntimeError(f"Error fetching messages: {resp.status_code} {resp.text}")
     messages = resp.json()
     if not messages:
         return "No recent messages found in this channel."
@@ -86,7 +91,8 @@ def get_guild_events(guild_id: str) -> str:
         f"{DISCORD_API}/guilds/{guild_id}/scheduled-events", headers=_headers()
     )
     if resp.status_code != 200:
-        return f"Error fetching events: {resp.status_code} {resp.text}"
+        logger.error("get_guild_events failed: %s %s", resp.status_code, resp.text)
+        raise RuntimeError(f"Error fetching events: {resp.status_code} {resp.text}")
     events = resp.json()
     if not events:
         return "No scheduled events found for this server."

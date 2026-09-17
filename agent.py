@@ -1,7 +1,10 @@
+import logging
 import os
 from smolagents import ToolCallingAgent, InferenceClientModel
 from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events
 from tools.search_tools import web_search
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are a helpful sim racing Discord bot assistant. Answer questions about:
 - The current race spec (car list, tuning rules)
@@ -49,4 +52,8 @@ def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str
         f"{category_line}"
         f"\nQuestion: {question}"
     )
-    return agent.run(prompt)
+    try:
+        return agent.run(prompt)
+    except Exception as exc:
+        logger.error("agent.run failed: %s", exc, exc_info=True)
+        return "I'm having trouble reaching my reasoning engine right now. Please try again in a moment."

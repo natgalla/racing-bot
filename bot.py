@@ -1,9 +1,17 @@
 import asyncio
+import logging
 import os
 import discord
 from dotenv import load_dotenv
 from agent import build_agent, ask
-from classifier import is_racing_relevant
+from classifier import classify_score, is_racing_relevant
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -29,7 +37,9 @@ async def on_message(message):
         if message.channel.category is None:
             return
         loop = asyncio.get_running_loop()
-        relevant = await loop.run_in_executor(None, is_racing_relevant, message.content)
+        score = await loop.run_in_executor(None, classify_score, message.content)
+        relevant = score >= float(os.environ.get("RELEVANCE_THRESHOLD", "0.75"))
+        logger.info("classifier verdict=%s score=%.3f message=%r", relevant, score, message.content[:80])
         if not relevant:
             return
 
@@ -42,11 +52,14 @@ async def on_message(message):
 
     if not is_mention:
         async with message.channel.typing():
+            logger.info("agent invoked channel=%s", message.channel.id)
             response = await loop.run_in_executor(
                 None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name
             )
-        if response.strip() == "SKIP":
+        if response.strip().upper() == "SKIP":
+            logger.info("response suppressed (SKIP)")
             return
+        logger.info("response sent channel=%s length=%d", message.channel.id, len(response))
         try:
             thread = await message.create_thread(name=question[:100])
             await thread.send(response)
@@ -60,9 +73,11 @@ async def on_message(message):
             send = message.reply
             thread = None
         async with (thread or message.channel).typing():
+            logger.info("agent invoked channel=%s", message.channel.id)
             response = await loop.run_in_executor(
                 None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name
             )
+        logger.info("response sent channel=%s length=%d", message.channel.id, len(response))
         await send(response)
 
 
