@@ -4,7 +4,7 @@ import os
 import discord
 from dotenv import load_dotenv
 from agent import build_agent, ask
-from classifier import classify_score, is_racing_relevant
+from classifier import classify_score
 
 logging.basicConfig(
     level=logging.INFO,
