@@ -76,20 +76,37 @@ Update found in testing: Set transmission to "270".
 def mock_get_channel_pins(channel_id: str) -> str:
     """Fetch pinned messages from a Discord channel. Use this first for spec questions — the current race spec is typically pinned.
 
+    Each pin is preceded by a [Pinned: YYYY-MM-DD] header showing when it was pinned. Use this date
+    as the after_date argument to get_recent_messages so only relevant post-pin chatter is fetched.
+
     Args:
         channel_id: The Discord channel ID to fetch pins from.
     """
-    return MOCK_PINS
+    return f"[Pinned: 2026-08-27]\n{MOCK_PINS}"
 
 
 @tool
-def mock_get_recent_messages(channel_id: str, limit: int = 20) -> str:
+def mock_get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") -> str:
     """Fetch recent messages from a Discord channel. Use this if pinned messages don't have enough context, or if the spec may have been updated in a recent post.
 
     Args:
         channel_id: The Discord channel ID to fetch messages from.
         limit: Number of recent messages to fetch (default 20, max 100).
+        after_date: Optional ISO date string (e.g. "2026-08-27"). When provided, only messages
+            from that date onward are returned (date comparison only — messages on that same day
+            are included). Use the [Pinned: YYYY-MM-DD] date from get_channel_pins so that
+            pre-event chatter from prior sessions does not pollute the context.
     """
+    # Mock messages carry [HH:MM] timestamps without dates — treat them all as 2026-08-27.
+    # Include them when after_date is 2026-08-27 or earlier; exclude all if after_date is later.
+    if after_date:
+        try:
+            filter_date = datetime.fromisoformat(after_date).date()
+            mock_date = datetime(2026, 8, 27).date()
+            if filter_date > mock_date:
+                return "No messages found after the specified date."
+        except ValueError:
+            pass
     return MOCK_MESSAGES
 
 

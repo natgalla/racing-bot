@@ -14,6 +14,9 @@ def _headers():
 def get_channel_pins(channel_id: str) -> str:
     """Fetch pinned messages from a Discord channel. Use this first for spec questions — the current race spec is typically pinned.
 
+    Each pin is preceded by a [Pinned: YYYY-MM-DD] header showing when it was pinned. Use this date
+    as the after_date argument to get_recent_messages so only relevant post-pin chatter is fetched.
+
     Args:
         channel_id: The Discord channel ID to fetch pins from.
     """
@@ -23,16 +26,28 @@ def get_channel_pins(channel_id: str) -> str:
     pins = resp.json()
     if not pins:
         return "No pinned messages found in this channel."
-    return "\n\n---\n\n".join(p["content"] for p in pins)
+    sections = []
+    for p in pins:
+        raw_date = p.get("pinned_at") or p.get("timestamp", "")
+        try:
+            pin_date = datetime.fromisoformat(raw_date.replace("Z", "+00:00")).strftime("%Y-%m-%d")
+        except (ValueError, AttributeError):
+            pin_date = "unknown"
+        sections.append(f"[Pinned: {pin_date}]\n{p['content']}")
+    return "\n\n---\n\n".join(sections)
 
 
 @tool
-def get_recent_messages(channel_id: str, limit: int = 20) -> str:
+def get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") -> str:
     """Fetch recent messages from a Discord channel. Use this if pinned messages don't have enough context, or if the spec may have been updated in a recent post.
 
     Args:
         channel_id: The Discord channel ID to fetch messages from.
         limit: Number of recent messages to fetch (default 20, max 100).
+        after_date: Optional ISO date string (e.g. "2026-08-27"). When provided, only messages
+            from that date onward are returned (date comparison only — messages on that same day
+            are included). Use the [Pinned: YYYY-MM-DD] date from get_channel_pins so that
+            pre-event chatter from prior sessions does not pollute the context.
     """
     resp = requests.get(
         f"{DISCORD_API}/channels/{channel_id}/messages",
@@ -44,12 +59,20 @@ def get_recent_messages(channel_id: str, limit: int = 20) -> str:
     messages = resp.json()
     if not messages:
         return "No recent messages found in this channel."
+    filter_date = None
+    if after_date:
+        try:
+            filter_date = datetime.fromisoformat(after_date).date()
+        except ValueError:
+            pass
     lines = []
     for m in messages:
         ts = datetime.fromisoformat(m["timestamp"].replace("Z", "+00:00"))
+        if filter_date is not None and ts.date() < filter_date:
+            continue
         author = m["author"]["username"]
         lines.append(f"[{ts.strftime('%H:%M')}] {author}: {m['content']}")
-    return "\n".join(lines)
+    return "\n".join(lines) if lines else "No messages found after the specified date."
 
 
 @tool
