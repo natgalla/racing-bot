@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from smolagents import tool
 
 from agent import build_agent, ask
+from classifier import classify_score, _THRESHOLD
 from tools.search_tools import web_search
 
 MOCK_PINS = """Friday Night Lights SEP/4th
@@ -124,12 +125,19 @@ def mock_get_guild_events(guild_id: str) -> str:
 def main():
     parser = argparse.ArgumentParser(description="Test the sim racing bot locally.")
     parser.add_argument("question", help="Question to ask the bot")
+    parser.add_argument("--classify", action="store_true", help="Print classifier score and exit without running the agent")
     parser.add_argument("--mock", action="store_true", help="Use mock Discord tools (real web search still runs)")
     parser.add_argument("--channel-id", default="000000000000000000", help="Discord channel ID")
     parser.add_argument("--guild-id", default="000000000000000000", help="Discord guild ID")
     args = parser.parse_args()
 
     load_dotenv()
+
+    if args.classify:
+        score = classify_score(args.question)
+        verdict = "PASS" if score >= _THRESHOLD else "FAIL"
+        print(f"Score: {score:.3f}  Threshold: {_THRESHOLD}  [{verdict}]")
+        return
 
     if args.mock:
         print("Mode: MOCK (no Discord token required)\n")

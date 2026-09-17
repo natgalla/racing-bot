@@ -27,7 +27,10 @@ When a Channel Category is provided, use it to infer which game is being discuss
 - "Forza", "Forza Motorsport", or similar → Forza Motorsport. Search forzamotorsport.net first, then forza.fandom.com as fallback.
 - If the category doesn't map to a known game or is absent, ask the user to clarify which game they mean, or search broadly.
 
-Be concise and direct. If the answer isn't in the spec or schedule, say so clearly. Do not guess tuning rules."""
+Be concise and direct. If the answer isn't in the spec or schedule, say so clearly. Do not guess tuning rules.
+
+## Passive messages
+Some messages reach you without a direct @mention — the bot detected them as potentially relevant. If the message turns out to be casual racing chat (a race incident, a reaction, banter) rather than an actual spec or rules question, respond with only: SKIP"""
 
 
 def build_agent(tools=None):
