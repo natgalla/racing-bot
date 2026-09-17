@@ -31,8 +31,9 @@ async def on_message(message):
     thread = await message.create_thread(name=question[:100])
     async with thread.typing():
         loop = asyncio.get_event_loop()
+        category_name = message.channel.category.name if message.channel.category else None
         response = await loop.run_in_executor(
-            None, ask, agent, question, str(message.channel.id), str(message.guild.id)
+            None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name
         )
     await thread.send(response)
 
