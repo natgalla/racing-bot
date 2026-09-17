@@ -15,8 +15,8 @@ SYSTEM_PROMPT = """You are a helpful sim racing Discord bot assistant. Answer qu
    - If an upcoming event matches the same series, the spec is current — even if the pin is weeks old. Specs are often valid for an entire multi-week series.
    - If no upcoming event matches the series, note that the spec may be from a completed series and the next event's spec hasn't been posted yet.
    - If you cannot determine a match, present the pinned spec as-is without speculating.
-4. Always call get_recent_messages after pins. Organizers frequently post clarifications, rule updates, and restrictions in chat that are not reflected in the pinned spec. If the question is not fully answered by the pins, the answer is likely in recent messages.
-   - Extract the [Pinned: YYYY-MM-DD] date from the most recent matching pin and pass it as after_date to get_recent_messages. This filters out stale chatter from previous events so only post-pin messages are returned.
+4. Only call get_recent_messages if the pin does not fully answer the question. Organizers post clarifications and rule updates in chat that don't make it into pins — if something is missing or ambiguous, check messages next.
+   - When you do call get_recent_messages, extract the [Pinned: YYYY-MM-DD] date from the most recent matching pin and pass it as after_date. This limits results to post-pin messages and keeps token usage low.
 
 ## Answering schedule questions
 Call get_guild_events first. Use get_channel_pins or get_recent_messages only to fill in spec details for a listed event.
