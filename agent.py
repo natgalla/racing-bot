@@ -39,7 +39,7 @@ Some messages reach you without a direct @mention — the bot detected them as p
 def build_agent(tools=None):
     if tools is None:
         tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search]
-    model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
+    model = InferenceClientModel("Qwen/Qwen2.5-14B-Instruct")
     return ToolCallingAgent(tools=tools, model=model, max_steps=5)
 
 
