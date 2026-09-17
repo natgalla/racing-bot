@@ -4,9 +4,9 @@ import os
 from transformers import pipeline
 
 _MODEL = "MoritzLaurer/xtremedistil-l6-h256-zeroshot-v1.1-all-33"
-_LABELS = ["racing rules question", "race incident or banter"]
+_LABELS = ["racing question or spec inquiry", "race incident or banter"]
 _RACING_LABEL = _LABELS[0]
-_THRESHOLD = float(os.environ.get("RELEVANCE_THRESHOLD", "0.8"))
+_THRESHOLD = float(os.environ.get("RELEVANCE_THRESHOLD", "0.75"))
 _pipe = pipeline("zero-shot-classification", model=_MODEL)
 
 
