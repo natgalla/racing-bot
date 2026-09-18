@@ -25,9 +25,9 @@ There are specific tunes for these trucks, what I am calling Production Supertru
 _next_friday = (datetime.now(tz=timezone.utc) + timedelta(days=7)).replace(
     hour=1, minute=0, second=0, microsecond=0
 )
-MOCK_EVENT_TIME = _next_friday.strftime("%A, %B %d at %I:%M %p UTC")
+MOCK_EVENT_UNIX = int(_next_friday.timestamp())
 
-MOCK_EVENTS = f"Friday Night Lights — {MOCK_EVENT_TIME} (SCHEDULED): Weekly sim racing event. Spec 01: Toyota Mark II/Chaser 450HP Sports Medium. Spec 02: Production Supertrucks on Sports Soft."
+MOCK_EVENTS = f"Friday Night Lights — <t:{MOCK_EVENT_UNIX}:F> (SCHEDULED): Weekly sim racing event. Spec 01: Toyota Mark II/Chaser 450HP Sports Medium. Spec 02: Production Supertrucks on Sports Soft."
 
 MOCK_MESSAGES = """[22:12] Can'tReachDriver_A: Alright folksies.
 Friday Night Lights SEP/4th
