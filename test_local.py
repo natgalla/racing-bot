@@ -29,7 +29,7 @@ MOCK_EVENT_UNIX = int(_next_friday.timestamp())
 
 MOCK_EVENTS = f"Friday Night Lights — <t:{MOCK_EVENT_UNIX}:F> (SCHEDULED): Weekly sim racing event. Spec 01: Toyota Mark II/Chaser 450HP Sports Medium. Spec 02: Production Supertrucks on Sports Soft."
 
-MOCK_MESSAGES = """[22:12] Can'tReachDriver_A: Alright folksies.
+MOCK_MESSAGES = """[22:12] Organizer: Alright folksies.
 Friday Night Lights SEP/4th
 Spec 01:
 Toyota Mark II Tourer (1997)
@@ -43,14 +43,14 @@ Toyota Tundra TRD Pro (2019)
 swapped! Demon-Challenger (200,000 Cr.)
 There are specific tunes for these trucks, what I am calling Production Supertrucks. You have your choice of "the full experience" (🌶️🌶️🌶️) or a more controllable option (🌶️🌶️)— which I recommend for those who aren't very confident on controller. You will need to engine swap these vehicles to make the power required; they are on Sports Soft tires. Trust in the tunes, I spent time on this!
 Image guide forthcoming
-[00:15] Can'tReachDriver_A: F-150 SVT Raptor '11 🌶️🌶️🌶️
+[00:15] Organizer: F-150 SVT Raptor '11 🌶️🌶️🌶️
 This car needs to be swapped to the Windsor-351-Maverick unit for 250,000 Credits.
 In GT Auto, you may add custom parts. But you may not change the body or wheelbase:
 NO Widebody
 NO Wide Offset Wheels
 NO Increase to Body Rigidity
 Be very sure you get all the settings correct. While not necessary, I suggest you practice a little bit. These are not easy to drive; there will be carnage!
-[00:22] Can'tReachDriver_A: Tundra TRD Pro '19 🌶️🌶️
+[00:22] Organizer: Tundra TRD Pro '19 🌶️🌶️
 This car needs to be swapped to the Demon-Challenger unit for 200,000 Credits.
 In GT Auto, you may add custom parts. But you may not change the body or wheelbase:
 NO Widebody
@@ -58,19 +58,19 @@ NO Wide Offset Wheels
 NO Increase to Body Rigidity
 Be very sure you get all the settings correct. While not necessary, I suggest you practice a little bit. These are not easy to drive; there will be carnage!
 Update found in testing: Set transmission to "270".
-[03:04] Can'tReachDriver_A: The Lobby will open September 4, 2026 at 8:30 PM
-[11:46] riley: @Can'tReachDriver_A nearly rwd, soft as puppy shit suspension, you really love us hey?
-[12:06] Driver_B: I'm kind of here for some out-of-the-box, unhinged nonsense
-[12:06] riley: It'll be fun
-[12:18] Can'tReachDriver_A: How about you take a practice lap? You might love me back.
-[12:23] riley: I'm doing that right now. I think this is the first thing that's made me feel sick in VR. FYI the Raptor will roll at Alsace Test track
-[15:00] Spag [FSM]: Just got mine set up and im taking it into some public lobbies to test it lmfao
-[15:25] Spag [FSM]: Jesus
-[15:26] riley: Can't save you in these trucks
-[15:27] Spag [FSM]: Also FYI the tundra will probably do a front flip if you brake too hard coming to flugplatz. Did a hard brake and I did an endo
-[15:59] riley: Sophy cannot drive these trucks lol. I did a 5 lapper at brands Hatch. I started in 20th and ended up lapping half of the field. So much carnage
-[16:24] Spag [FSM]: Lmao I tried it out to see what it was like and im not disappointed. Pretty much just cruised my way to 1st
-[16:28] riley: Yeah, that was my experience"""
+[03:04] Organizer: The Lobby will open September 4, 2026 at 8:30 PM
+[11:46] Driver1: @Organizer nearly rwd, soft as puppy shit suspension, you really love us hey?
+[12:06] Driver2: I'm kind of here for some out-of-the-box, unhinged nonsense
+[12:06] Driver1: It'll be fun
+[12:18] Organizer: How about you take a practice lap? You might love me back.
+[12:23] Driver1: I'm doing that right now. I think this is the first thing that's made me feel sick in VR. FYI the Raptor will roll at Alsace Test track
+[15:00] Driver3: Just got mine set up and im taking it into some public lobbies to test it lmfao
+[15:25] Driver3: Jesus
+[15:26] Driver1: Can't save you in these trucks
+[15:27] Driver3: Also FYI the tundra will probably do a front flip if you brake too hard coming to flugplatz. Did a hard brake and I did an endo
+[15:59] Driver1: Sophy cannot drive these trucks lol. I did a 5 lapper at brands Hatch. I started in 20th and ended up lapping half of the field. So much carnage
+[16:24] Driver3: Lmao I tried it out to see what it was like and im not disappointed. Pretty much just cruised my way to 1st
+[16:28] Driver1: Yeah, that was my experience"""
 
 
 @tool
