@@ -59,6 +59,7 @@ async def on_message(message):
         if response.strip().upper() == "SKIP":
             logger.info("response suppressed (SKIP)")
             return
+        response = response.strip() + " 🤖"
         logger.info("response sent channel=%s length=%d", message.channel.id, len(response))
         try:
             thread = await message.create_thread(name=question[:100])
@@ -77,6 +78,7 @@ async def on_message(message):
             response = await loop.run_in_executor(
                 None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name
             )
+        response = response.strip() + " 🤖"
         logger.info("response sent channel=%s length=%d", message.channel.id, len(response))
         await send(response)
 
