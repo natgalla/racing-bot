@@ -101,7 +101,8 @@ def get_guild_events(guild_id: str) -> str:
         raw_time = e.get("scheduled_start_time", "")
         if raw_time:
             dt = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
-            start_time = dt.strftime("%A, %B %d at %I:%M %p UTC")
+            unix = int(dt.timestamp())
+            start_time = f"<t:{unix}:F>"
         else:
             start_time = "TBD"
         status_map = {1: "SCHEDULED", 2: "ACTIVE", 3: "COMPLETED", 4: "CANCELLED"}
