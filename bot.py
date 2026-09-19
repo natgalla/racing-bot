@@ -26,6 +26,22 @@ async def on_ready():
     print(f"Logged in as {client.user}")
 
 
+async def fetch_thread_history(channel, bot_user_id, limit=10):
+    messages = []
+    async for m in channel.history(limit=limit + 1, oldest_first=False):
+        messages.append(m)
+    prior = list(reversed(messages[1:]))
+    if not prior:
+        return None
+    lines = []
+    for m in prior:
+        role = "Assistant" if m.author.id == bot_user_id else "User"
+        content = m.content.replace(f"<@{bot_user_id}>", "").strip()
+        if content:
+            lines.append(f"{role}: {content}")
+    return "\n".join(lines) if lines else None
+
+
 @client.event
 async def on_message(message):
     if message.author.bot:
@@ -47,7 +63,12 @@ async def on_message(message):
 
     question = message.content.replace(f"<@{client.user.id}>", "").strip()
     if not question:
+        await message.reply("I'm here if you need help with the race spec, schedule, or any GT7 questions. 🤖")
         return
+
+    thread_history = None
+    if isinstance(message.channel, discord.Thread):
+        thread_history = await fetch_thread_history(message.channel, client.user.id)
 
     loop = asyncio.get_running_loop()
     category_name = message.channel.category.name if message.channel.category else None
@@ -56,7 +77,7 @@ async def on_message(message):
         async with message.channel.typing():
             logger.info("agent invoked channel=%s", message.channel.id)
             response = await loop.run_in_executor(
-                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name
+                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name, thread_history
             )
         if response.strip().upper() == "SKIP":
             logger.info("response suppressed (SKIP)")
@@ -78,7 +99,7 @@ async def on_message(message):
         async with (thread or message.channel).typing():
             logger.info("agent invoked channel=%s", message.channel.id)
             response = await loop.run_in_executor(
-                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name
+                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name, thread_history
             )
         response = response.strip() + " 🤖"
         logger.info("response sent channel=%s length=%d", message.channel.id, len(response))

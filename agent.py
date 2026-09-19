@@ -71,14 +71,16 @@ def _glossary_for_category(category_name: str | None) -> str:
     return ""
 
 
-def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None) -> str:
+def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None) -> str:
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
     glossary = _glossary_for_category(category_name)
+    history_section = f"\nConversation so far:\n{thread_history}\n" if thread_history else ""
     prompt = (
         f"{SYSTEM_PROMPT}{glossary}\n\n"
         f"Channel ID: {channel_id}\n"
         f"Guild ID: {guild_id}\n"
         f"{category_line}"
+        f"{history_section}"
         f"\nQuestion: {question}"
     )
     try:
