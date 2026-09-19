@@ -40,6 +40,19 @@ Some messages reach you without a direct @mention — the bot detected them as p
 For passive messages that are genuine questions, exhaust local sources first — pins, events, and channel history. Only call web_search if the answer cannot be found there. Do not search speculatively."""
 
 
+GT7_GLOSSARY = """## Shorthand glossary (Gran Turismo 7)
+- PP: Performance Points — the in-game performance rating used to gate cars into a race spec.
+- BOP: Balance of Performance — fixed power/weight adjustments applied to equalize cars within a class.
+- Gr.1: top-tier prototype/LMP class. Gr.2: touring/super GT class. Gr.3: GT3-equivalent class. Gr.4: GT4-equivalent class. Gr.B: rally class. Gr.X: special/concept cars, no fixed class.
+- N100/N200/N300/N400/N500/N600/N700: Normalized PP limits — race specs that cap PP at the stated value (e.g. N300 = max 300 PP).
+- Tire compounds — Comfort: CH (Hard), CM (Medium), CS (Soft). Sport: SH (Hard), SM (Medium), SS (Soft). Racing: RH (Hard), RM (Medium), RS (Soft), RI (Intermediate), RW (Wet). Dirt: DT."""
+
+FORZA_GLOSSARY = """## Shorthand glossary (Forza Motorsport)
+- PI: Performance Index — numeric 0–999 rating used to class cars; classes are D (100–500), C (501–600), B (601–700), A (701–800), S1 (801–900), S2 (901–998), X (999).
+- Tire compounds: ST = Street, SP = Sport, SE = Semi-Slick, SL = Slick, VT = Vintage, OF = Off-Road.
+- Homologation: restricting a car's upgrades to a defined period-correct parts list, used in some league specs to prevent optimal min-maxing."""
+
+
 def build_agent(tools=None):
     if tools is None:
         tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search]
@@ -47,10 +60,22 @@ def build_agent(tools=None):
     return ToolCallingAgent(tools=tools, model=model, max_steps=5)
 
 
+def _glossary_for_category(category_name: str | None) -> str:
+    if not category_name:
+        return ""
+    cat = category_name.upper()
+    if "GRAN TURISMO" in cat or "GT7" in cat:
+        return "\n\n" + GT7_GLOSSARY
+    if "FORZA" in cat:
+        return "\n\n" + FORZA_GLOSSARY
+    return ""
+
+
 def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None) -> str:
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
+    glossary = _glossary_for_category(category_name)
     prompt = (
-        f"{SYSTEM_PROMPT}\n\n"
+        f"{SYSTEM_PROMPT}{glossary}\n\n"
         f"Channel ID: {channel_id}\n"
         f"Guild ID: {guild_id}\n"
         f"{category_line}"
