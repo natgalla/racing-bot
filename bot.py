@@ -34,7 +34,9 @@ async def on_message(message):
     is_mention = client.user in message.mentions
 
     if not is_mention:
-        if message.channel.category is None:
+        if message.channel.category is None or message.channel.category.name != "Gran Turismo 7":
+            return
+        if not message.content.strip():
             return
         loop = asyncio.get_running_loop()
         score = await loop.run_in_executor(None, classify_score, message.content)
