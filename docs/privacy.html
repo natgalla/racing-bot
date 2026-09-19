@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Privacy Policy - Gateaubot</title>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+                    Arial, sans-serif;
+                font-size: 1rem;
+                line-height: 1.7;
+                color: #1a1a1a;
+                background: #ffffff;
+                margin: 0;
+                padding: 2rem 1.25rem;
+            }
+
+            main {
+                max-width: 680px;
+                margin: 0 auto;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+                font-weight: 700;
+                margin: 0 0 0.25rem;
+            }
+
+            .meta {
+                font-size: 0.875rem;
+                color: #666;
+                margin: 0 0 2.5rem;
+            }
+
+            h2 {
+                font-size: 1.125rem;
+                font-weight: 600;
+                margin: 2rem 0 0.5rem;
+                border-bottom: 1px solid #e5e5e5;
+                padding-bottom: 0.25rem;
+            }
+
+            p {
+                margin: 0.5rem 0;
+            }
+
+            ul {
+                margin: 0.5rem 0;
+                padding-left: 1.5rem;
+            }
+
+            li {
+                margin: 0.3rem 0;
+            }
+
+            a {
+                color: #0066cc;
+            }
+
+            footer {
+                margin-top: 3rem;
+                padding-top: 1rem;
+                border-top: 1px solid #e5e5e5;
+                font-size: 0.875rem;
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Privacy Policy</h1>
+            <p class="meta">Gateaubot &mdash; Last updated: September 2026</p>
+
+            <p>
+                Gateaubot is a Discord bot built for a private sim racing
+                server. It answers questions about race schedules, car specs,
+                and tuning. This page explains what data the bot touches, what
+                it sends off-server, and what it does not do.
+            </p>
+
+            <h2>What the bot reads</h2>
+            <p>To do its job, Gateaubot reads the following from Discord:</p>
+            <ul>
+                <li>Message content in channels it has access to</li>
+                <li>Pinned messages in those channels</li>
+                <li>Discord scheduled events on the server</li>
+                <li>
+                    Basic channel metadata (channel name, message timestamps)
+                </li>
+            </ul>
+            <p>
+                The bot scans messages passively to decide whether a message
+                contains a racing-related question worth responding to. Most
+                messages are evaluated and then discarded immediately.
+            </p>
+
+            <h2>What gets sent to HuggingFace</h2>
+            <p>
+                When Gateaubot decides to respond, it sends a short window of
+                recent channel messages to HuggingFace's Inference API.
+                HuggingFace hosts the language model (Qwen 72B) that generates
+                the bot's replies.
+            </p>
+            <p>Before any messages leave your server:</p>
+            <ul>
+                <li>
+                    All Discord usernames are replaced with anonymous labels
+                    (User1, User2, and so on). The real usernames are never
+                    transmitted.
+                </li>
+                <li>
+                    Message content is sent only to produce a reply. It is not
+                    used for training.
+                </li>
+            </ul>
+            <p>
+                HuggingFace's handling of Inference API requests is governed by
+                their own privacy policy. Gateaubot uses the API in
+                inference-only mode and does not opt in to any data-sharing or
+                training programs.
+            </p>
+
+            <h2>What is not stored</h2>
+            <p>
+                Gateaubot does not maintain a database or any persistent storage
+                of user data. Specifically:
+            </p>
+            <ul>
+                <li>No messages are saved to disk or a database.</li>
+                <li>No usernames or user IDs are recorded.</li>
+                <li>No logs of conversations are kept.</li>
+                <li>
+                    Nothing is retained after the bot finishes generating a
+                    reply.
+                </li>
+            </ul>
+
+            <h2>What we do not do</h2>
+            <ul>
+                <li>We do not sell any data.</li>
+                <li>
+                    We do not share data with any third party other than
+                    HuggingFace for inference.
+                </li>
+                <li>We do not use cookies or any form of tracking.</li>
+                <li>We do not require account registration of any kind.</li>
+                <li>
+                    We do not collect data from users outside the Discord server
+                    the bot is installed in.
+                </li>
+            </ul>
+
+            <h2>Who operates this bot</h2>
+            <p>
+                Gateaubot is operated by a private individual for a private
+                Discord server. It is not a commercial product or service.
+            </p>
+
+            <h2>Contact</h2>
+            <p>
+                If you have questions about this policy or want to request that
+                something be addressed, reach out at
+                <a href="mailto:[natgalla@gmail.com]">natgalla@gmail.com</a>.
+            </p>
+
+            <h2>Changes to this policy</h2>
+            <p>
+                If anything material changes about how the bot handles data,
+                this page will be updated and the "last updated" date at the top
+                will reflect the change.
+            </p>
+
+            <footer>Gateaubot &mdash; Privacy Policy</footer>
+        </main>
+    </body>
+</html>
