@@ -71,11 +71,15 @@ def get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") 
         except ValueError:
             pass
     lines = []
+    username_map = {}
     for m in messages:
         ts = datetime.fromisoformat(m["timestamp"].replace("Z", "+00:00"))
         if filter_date is not None and ts.date() < filter_date:
             continue
-        author = m["author"]["username"]
+        real_username = m["author"]["username"]
+        if real_username not in username_map:
+            username_map[real_username] = f"User{len(username_map) + 1}"
+        author = username_map[real_username]
         lines.append(f"[{ts.strftime('%H:%M')}] {author}: {m['content']}")
     return "\n".join(lines) if lines else "No messages found after the specified date."
 
