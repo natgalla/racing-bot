@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import discord
 from dotenv import load_dotenv
 from agent import build_agent, ask
@@ -53,6 +54,8 @@ async def on_message(message):
         if message.channel.category is None or message.channel.category.name != "Gran Turismo 7":
             return
         if not message.content.strip():
+            return
+        if re.fullmatch(r"https?://\S+", message.content.strip()):
             return
         loop = asyncio.get_running_loop()
         score = await loop.run_in_executor(None, classify_score, message.content)
