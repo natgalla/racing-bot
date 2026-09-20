@@ -57,6 +57,12 @@ async def on_message(message):
             return
         if re.fullmatch(r"https?://\S+", message.content.strip()):
             return
+        # strip Discord mentions and custom emoji tags, skip if nothing substantive remains
+        stripped = re.sub(r"<a?:[^:]+:\d+>|<@!?\d+>|<#\d+>|<@&\d+>", "", message.content).strip()
+        if not stripped:
+            return
+        if re.fullmatch(r"[\U0001F000-\U0001FFFF\U00002600-\U000027FF︀-️\s]+", stripped):
+            return
         loop = asyncio.get_running_loop()
         score = await loop.run_in_executor(None, classify_score, message.content)
         relevant = score >= float(os.environ.get("RELEVANCE_THRESHOLD", "0.75"))
