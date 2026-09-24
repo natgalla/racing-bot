@@ -7,6 +7,7 @@ from smolagents import tool
 
 from agent import build_agent, ask
 from classifier import classify_score, _THRESHOLD
+from tools.gtdb_cache import force_refresh_list
 from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
 
@@ -14,7 +15,7 @@ MOCK_PINS = """Friday Night Lights SEP/4th
 Spec 01:
 Toyota Mark II Tourer (1997)
 Toyota Mark V Chaser (1997)
-Leave all settings default, except for power, making 450HP. Base weight: 3,000 lbs. Sports Medium Tires!
+Leave all settings default, except for power, making 450HP. How you reach that power figure (and how you customize the body) is up to you. Sports Medium Tires!
 
 Spec 02:
 Ford F-150 SVT Raptor (2011)
@@ -121,6 +122,49 @@ Update found in testing: Set transmission to "270".
 [16:28] Driver1: Yeah, that was my experience"""
 
 
+MOCK_GTDB_CAR = """Nissan 180SX Type X '96
+PP: 465.26 | Group: Gr.N | Drivetrain: FR | Aspiration: T
+Power: 203 BHP / 6000 rpm | Torque: 27.9 kgfm / 4000 rpm
+Weight: 1,220 kg | Displacement: 1,998 cc
+Tags: #Road Car
+Acquisition: Used Cars — Cr. 49,500
+Note: Available from the Used Cars dealer."""
+
+MOCK_GTDB_SEARCH = """Nissan 180SX Type X '96 | PP: 465.26 | Drivetrain: FR | Weight: 1,220 kg | Tags: #Road Car
+Nissan Silvia Spec-R Aero '02 | PP: 471.33 | Drivetrain: FR | Weight: 1,240 kg | Tags: #Road Car"""
+
+
+@tool
+def mock_get_car_specs(car_name: str) -> str:
+    """Return full specs and acquisition info for a Gran Turismo 7 car by name. Call this whenever a user asks about a specific car's stats, performance points, drivetrain, power, weight, group class, or how to acquire it in GT7. Prefers this over web_search for GT7 car data.
+
+    Args:
+        car_name: The name of the car to look up, e.g. "180SX Type X '96" or "Nissan 180SX".
+            Fuzzy matching is applied so partial names and minor typos are tolerated.
+    """
+    return MOCK_GTDB_CAR
+
+
+@tool
+def mock_search_cars(filters: str) -> str:
+    """Search Gran Turismo 7 cars by performance and spec filters. Call this when a user wants to find cars within a PP range, by drivetrain layout, weight, power, group class, or tag category. Returns a list of matching cars with key stats.
+
+    Args:
+        filters: A JSON string containing one or more filter keys. All keys are optional.
+            Supported keys:
+              pp_min (float) — minimum Performance Points, e.g. 450.0
+              pp_max (float) — maximum Performance Points, e.g. 500.0
+              weight_max (int, kg) — maximum car weight in kilograms, e.g. 1200
+              power_min (int, BHP) — minimum power output in BHP, e.g. 300
+              drivetrain (str) — layout code: "FR", "MR", "FF", or "4WD"
+              tags (list of str) — one or more tag strings the car must have, e.g. ["#Road Car"]
+              group (str) — race group: "Gr.1", "Gr.2", "Gr.3", "Gr.4", "Gr.B", "Gr.N", or "Gr.X"
+
+            Example: '{"pp_min": 450, "pp_max": 500, "drivetrain": "FR", "tags": ["#Road Car"]}'
+    """
+    return MOCK_GTDB_SEARCH
+
+
 @tool
 def mock_get_channel_pins(channel_id: str) -> str:
     """Fetch pinned messages from a Discord channel. Use this first for spec questions — the current race spec is typically pinned.
@@ -167,7 +211,7 @@ def mock_get_recent_messages(channel_id: str, limit: int = 20, after_date: str =
     if after_date:
         try:
             filter_date = datetime.fromisoformat(after_date).date()
-            mock_date = datetime(2026, 9, 21).date()
+            mock_date = datetime(2026, 8, 27).date()
             if filter_date > mock_date:
                 return "No messages found after the specified date."
         except ValueError:
@@ -195,9 +239,15 @@ def main():
     parser.add_argument("--guild-id", default="000000000000000000", help="Discord guild ID")
     parser.add_argument("--channel-name", default=None, help="Discord channel name (use 'le-club-des-petits-gâteaux' to test handicap path)")
     parser.add_argument("--author-username", default=None, help="Discord username of the asking user")
+    parser.add_argument("--refresh-gtdb", action="store_true", help="Force-refresh the GT7 car list cache before running")
     args = parser.parse_args()
 
     load_dotenv()
+
+    if args.refresh_gtdb:
+        print("Refreshing GT7 car list cache from gtdb.io...")
+        force_refresh_list()
+        print("Done.\n")
 
     if args.classify:
         score = classify_score(args.question)
@@ -214,6 +264,8 @@ def main():
             web_search,
             mock_read_image_content,
             calculate_handicap_settings,
+            mock_get_car_specs,
+            mock_search_cars,
         ])
     else:
         if not os.environ.get("DISCORD_TOKEN"):

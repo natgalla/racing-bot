@@ -2,3 +2,6 @@ discord.py>=2.3.0
 smolagents[toolkit]
 python-dotenv
 requests
+beautifulsoup4>=4.12
+lxml>=5.0
+rapidfuzz>=3.0

@@ -6,13 +6,14 @@ from smolagents import ToolCallingAgent, InferenceClientModel
 from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events, read_image_content
 from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
+from tools.gtdb_tools import get_car_specs, search_cars
 
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """You are a helpful sim racing Discord bot assistant. Answer questions about:
 - The current race spec (car list, tuning rules)
 - The race schedule and upcoming events
-- Gran Turismo 7 or Forza Motorsport cars, tunes, and game data — use web_search
+- Gran Turismo 7 or Forza Motorsport cars, tunes, and game data
 
 ## Passive messages (no @mention)
 When the message is marked as passive, your default is SKIP. Only respond if you are confident the message is a genuine question directed at the bot that you can actually answer.
@@ -41,6 +42,9 @@ Call final_answer with the single word SKIP — do not call any other tools firs
 Call get_guild_events first. Use get_channel_pins or get_recent_messages only to fill in spec details for a listed event.
 
 When reporting event times, reproduce the <t:UNIX:F> timestamp tags exactly as returned — do not paraphrase or convert them to plain text. Discord renders these tags in each user's local timezone.
+
+## GT7 car data
+For GT7 car specs, PP, drivetrain, weight, power, group class, or acquisition questions, prefer get_car_specs and search_cars over web_search — they query a local GT7 car database and are faster and more reliable. Only fall back to web_search for GT7 data that those tools cannot answer.
 
 ## Game source priority
 When a Channel Category is provided, use it to infer which game is being discussed:
@@ -105,7 +109,7 @@ HANDICAP_INSTRUCTIONS = """## Answering handicap questions
 
 def build_agent(tools=None):
     if tools is None:
-        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, calculate_handicap_settings]
+        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, calculate_handicap_settings, get_car_specs, search_cars]
     model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
     return ToolCallingAgent(tools=tools, model=model)
 
