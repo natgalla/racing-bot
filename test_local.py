@@ -58,17 +58,17 @@ Upgrades (negative points — car becomes faster)
 
 MOCK_STANDINGS_TEXT = """\
 Drivers          +/-
-Driver_A           13
-Driver_B   3
+Driver_A         13
+Driver_B         3
 Driver_C         -2
-Driver_D       -1
-Driver_E      -8
-Driver_F            4
-Driver_G     1
-Driver_H     5
-Driver_I        2
-Driver_J  -11
-Driver_K           -2"""
+Driver_D         -1
+Driver_E         -8
+Driver_F         4
+Driver_G         1
+Driver_H         5
+Driver_I         2
+Driver_J         -11
+Driver_K         -2"""
 
 _next_friday = (datetime.now(tz=timezone.utc) + timedelta(days=7)).replace(
     hour=1, minute=0, second=0, microsecond=0

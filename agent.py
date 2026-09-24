@@ -102,7 +102,7 @@ HANDICAP_INSTRUCTIONS = """## Answering handicap questions
 1. Call get_channel_pins. You are looking for two things:
    - The spec handicap package: a pin annotated [Spec handicap package: detunes + up-tunes] containing two image attachments. This pin marks the series start. Call read_image_content on both image URLs to get the detune and up-tune adjustment tables. The pin date is the series anchor — the series start is the first Wednesday on or after that date.
    - The race spec pin: contains the canonical base weight and power for the current car.
-2. Call get_recent_messages to find the weekly standings screenshot. See get_recent_messages docstring for the exact search window. The asking user's Discord username is provided above. Use it to find their entry via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
+2. Call get_recent_messages to find the weekly standings screenshot. See get_recent_messages docstring for the exact search window. The asking user's Discord username is provided above. Use it to find their entry via partial/fuzzy match (e.g. "driverb" matches "Driver B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
    - If standings haven't been posted yet, tell the user and ask the organizer to post with #standings.
 3. Look up their +/- total in the adjustment table to get the weight change % and power change %. Call calculate_handicap_settings — do not do this math yourself. Tell the driver: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W PS).\""""
 
