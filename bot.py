@@ -85,11 +85,10 @@ async def on_message(message):
     category_name = channel.category.name if channel.category else None
 
     if not is_mention:
-        async with message.channel.typing():
-            logger.info("agent invoked channel=%s", message.channel.id)
-            response = await loop.run_in_executor(
-                None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name)
-            )
+        logger.info("agent invoked channel=%s", message.channel.id)
+        response = await loop.run_in_executor(
+            None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name)
+        )
         if response.strip().upper() == "SKIP":
             logger.info("response suppressed (SKIP)")
             return
