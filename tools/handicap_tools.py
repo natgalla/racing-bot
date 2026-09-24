@@ -8,7 +8,7 @@ def calculate_handicap_settings(
     weight_change_pct: float,
     power_change_pct: float,
 ) -> str:
-    """Calculate final BOP settings after applying handicap adjustments. Always call this instead of doing the math yourself.
+    """Calculate final BOP settings after applying handicap adjustments. Always call this instead of doing the math yourself. Look up the driver's +/- total from the standings image in the adjustment table extracted from the handicap package pins to get the weight_change_pct and power_change_pct values.
 
     Args:
         base_weight_lbs: The car's canonical base weight in lbs from the race spec.

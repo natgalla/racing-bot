@@ -23,20 +23,24 @@ def _image_lines(obj: dict) -> list[str]:
 
 
 @tool
-def get_channel_pins(channel_id: str) -> str:
+def get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
     """Fetch pinned messages from a Discord channel. Use this first for spec questions — the current race spec is typically pinned.
 
     Each pin is preceded by a [Pinned: YYYY-MM-DD] header showing when it was pinned. Use this date
     as the after_date argument to get_recent_messages so only relevant post-pin chatter is fetched.
 
+    Returns up to max_pins most recent pins (default 5). Increase if the relevant spec may be in an older pin.
+
     Args:
         channel_id: The Discord channel ID to fetch pins from.
+        max_pins: Maximum number of pins to return (default 5, newest first).
     """
     resp = requests.get(f"{DISCORD_API}/channels/{channel_id}/pins", headers=_headers())
     if resp.status_code != 200:
         logger.error("get_channel_pins failed: %s %s", resp.status_code, resp.text)
         raise RuntimeError(f"Error fetching pins: {resp.status_code} {resp.text}")
     pins = resp.json()
+    pins = pins[:max_pins]
     if not pins:
         return "No pinned messages found in this channel."
     sections = []
@@ -104,6 +108,13 @@ def read_image_content(image_url: str) -> str:
 def get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") -> str:
     """Fetch recent messages from a Discord channel. Use this if pinned messages don't have enough context, or if the spec may have been updated in a recent post.
 
+    Output is capped at 6000 characters. For handicap standings searches, use a tight after_date window and limit=20 to stay within this cap.
+
+    For handicap standings searches, identify the most recent Wednesday on or before today.
+    Look back up to 10 days from that Wednesday (covers race day plus a 3-day late-post buffer).
+    Find the most recent message containing "#standings" and an [Image attachment: <url>].
+    If nothing found in 10 days, widen to 14 days.
+
     Args:
         channel_id: The Discord channel ID to fetch messages from.
         limit: Number of recent messages to fetch (default 20, max 100).
@@ -142,15 +153,20 @@ def get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") 
         image_lines = _image_lines(m)
         parts = list(filter(None, [m["content"]] + image_lines))
         lines.append(f"[{ts.strftime('%H:%M')}] {author}: {' '.join(parts)}")
-    return "\n".join(lines) if lines else "No messages found after the specified date."
+    result = "\n".join(lines) if lines else "No messages found after the specified date."
+    CAP = 6000
+    if len(result) > CAP:
+        result = result[:CAP] + f"\n[... truncated — {len(lines)} lines total. Use a tighter after_date or smaller limit to see more recent messages.]"
+    return result
 
 
 @tool
-def get_guild_events(guild_id: str) -> str:
+def get_guild_events(guild_id: str, series_name: str = "") -> str:
     """Fetch upcoming scheduled Discord events for this server. Use this for schedule/timing questions.
 
     Args:
         guild_id: The Discord guild (server) ID to fetch events from.
+        series_name: Optional case-insensitive substring to filter events by name. Pass the series name from the pinned spec without date qualifiers (e.g. 'Friday Night Lights' not 'Friday Night Lights SEP/4th').
     """
     resp = requests.get(
         f"{DISCORD_API}/guilds/{guild_id}/scheduled-events", headers=_headers()
@@ -159,7 +175,11 @@ def get_guild_events(guild_id: str) -> str:
         logger.error("get_guild_events failed: %s %s", resp.status_code, resp.text)
         raise RuntimeError(f"Error fetching events: {resp.status_code} {resp.text}")
     events = resp.json()
+    if series_name:
+        events = [e for e in events if series_name.lower() in e.get("name", "").lower()]
     if not events:
+        if series_name:
+            return f"No scheduled events found matching '{series_name}'."
         return "No scheduled events found for this server."
     lines = []
     for e in events:

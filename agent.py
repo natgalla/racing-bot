@@ -102,22 +102,18 @@ HANDICAP_INSTRUCTIONS = """## Answering handicap questions
 1. Call get_channel_pins. You are looking for two things:
    - The spec handicap package: a pin annotated [Spec handicap package: detunes + up-tunes] containing two image attachments. This pin marks the series start. Call read_image_content on both image URLs to get the detune and up-tune adjustment tables. The pin date is the series anchor — the series start is the first Wednesday on or after that date.
    - The race spec pin: contains the canonical base weight and power for the current car.
-2. Call get_recent_messages to find the weekly standings screenshot. The standings image is posted the day after each Wednesday race, sometimes a few days late. To find the right window:
-   - Identify the most recent Wednesday on or before today.
-   - Look back from that Wednesday up to 10 days total (covers the race day plus a 3-day late-post buffer).
-   - Search for the most recent message in that window containing "#standings" and an [Image attachment: <url>]. Call read_image_content on that URL to extract each driver's current +/- total.
-   - If nothing is found in 10 days, widen to 14 days before concluding the standings haven't been posted yet.
-   - If still nothing, tell the user the current standings haven't been posted yet and ask them to have the organizer post the screenshot with #standings in the caption.
-   - The asking user's Discord username is provided above. Use it to find their entry automatically via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
-3. Calculate the driver's exact target settings:
-   - Look up their +/- total in the adjustment table to get the weight change % and power change %.
-   - Call calculate_handicap_settings with the base weight, base power, and those percentages. Do not do this math yourself.
-   - Use the returned values to tell the driver: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W PS).\""""
+2. Call get_recent_messages to find the weekly standings screenshot. See get_recent_messages docstring for the exact search window. The asking user's Discord username is provided above. Use it to find their entry via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
+   - If standings haven't been posted yet, tell the user and ask the organizer to post with #standings.
+3. Look up their +/- total in the adjustment table to get the weight change % and power change %. Call calculate_handicap_settings — do not do this math yourself. Tell the driver: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W PS).\""""
+
+
+HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, read_image_content, calculate_handicap_settings]
+GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, get_car_specs, search_cars, get_tuning_recommendations]
 
 
 def build_agent(tools=None):
     if tools is None:
-        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, calculate_handicap_settings, get_car_specs, search_cars, get_tuning_recommendations]
+        tools = GENERAL_TOOLS
     model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
     return ToolCallingAgent(tools=tools, model=model)
 
@@ -133,7 +129,7 @@ def _glossary_for_category(category_name: str | None) -> str:
     return ""
 
 
-def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None) -> str:
+def ask(question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None, tools: list | None = None) -> str:
     today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
     date_line = f"Today's date: {today}\n"
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
@@ -142,6 +138,10 @@ def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str
     passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
     author_line = f"Asking user's Discord username: {author_username}\n" if author_username else ""
     is_handicap_channel = unicodedata.normalize("NFC", channel_name or "") == HANDICAP_CHANNEL
+    if tools is not None:
+        agent = build_agent(tools=tools)
+    else:
+        agent = build_agent(tools=HANDICAP_TOOLS if is_handicap_channel else GENERAL_TOOLS)
     handicap_section = f"\n\n{SERIES_SCHEDULE}\n\n{HANDICAP_INSTRUCTIONS}\n\n{HANDICAP_SYSTEM}" if is_handicap_channel else ""
     prompt = (
         f"{SYSTEM_PROMPT}{glossary}"
