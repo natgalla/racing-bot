@@ -42,7 +42,7 @@ When reporting event times, reproduce the <t:UNIX:F> timestamp tags exactly as r
 ## Answering handicap questions
 1. Call get_channel_pins to find two things: (a) the race spec pin, which contains the canonical base weight and power for the current car; (b) the handicap pin containing the upgrade/downgrade adjustment table. Both may be image attachments — call read_image_content on any [Image attachment: <url>] lines to extract them.
 2. Call get_recent_messages to find the weekly standings screenshot. It is posted as an image with no text label — look for the most recent message that contains only an [Image attachment: <url>] with no other content. Call read_image_content on that URL to extract each driver's current +/- total.
-   - Driver names in the spreadsheet are often truncated versions of their Discord username. Do a partial/fuzzy match (e.g. "Driver_B" matches "Driver_B"). If there is still ambiguity, list the close matches and ask the user to confirm which one is them.
+   - The asking user's Discord username is provided above. Use it to find their entry automatically via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
 3. Calculate the driver's exact target settings:
    - Look up their +/- total in the adjustment table to get the weight change % and power change %.
    - Apply those percentages to the canonical base weight and power from the spec.
@@ -107,11 +107,12 @@ def _glossary_for_category(category_name: str | None) -> str:
     return ""
 
 
-def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True) -> str:
+def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None) -> str:
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
     glossary = _glossary_for_category(category_name)
     history_section = f"\nConversation so far:\n{thread_history}\n" if thread_history else ""
     passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
+    author_line = f"Asking user's Discord username: {author_username}\n" if author_username else ""
     prompt = (
         f"{SYSTEM_PROMPT}{glossary}\n\n"
         f"{HANDICAP_SYSTEM}\n\n"
@@ -119,6 +120,7 @@ def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str
         f"Guild ID: {guild_id}\n"
         f"{category_line}"
         f"{passive_line}"
+        f"{author_line}"
         f"{history_section}"
         f"\nQuestion: {question}"
     )
