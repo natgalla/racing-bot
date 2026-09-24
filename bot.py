@@ -86,7 +86,7 @@ async def on_message(message):
         async with message.channel.typing():
             logger.info("agent invoked channel=%s", message.channel.id)
             response = await loop.run_in_executor(
-                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name, thread_history
+                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False
             )
         if response.strip().upper() == "SKIP":
             logger.info("response suppressed (SKIP)")

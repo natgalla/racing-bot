@@ -11,6 +11,19 @@ SYSTEM_PROMPT = """You are a helpful sim racing Discord bot assistant. Answer qu
 - The race schedule and upcoming events
 - Gran Turismo 7 or Forza Motorsport cars, tunes, and game data — use web_search
 
+## Passive messages (no @mention)
+When the message is marked as passive, your default is SKIP. Only respond if you are confident the message is a genuine question directed at the bot that you can actually answer.
+
+Always SKIP when:
+- The message is directed at another person, even if it mentions a racing topic (e.g. "hence me asking how to add oversteer every single week" — that's a complaint to a human, not a question for you)
+- The message is meta-commentary about the bot itself (e.g. "let's see how many ways we can trigger this")
+- The message is a joke, rhetorical aside, or frustrated remark
+- The message is banter, a race incident reaction, or general chat
+- You are not confident it's a genuine question for you
+
+When in doubt, SKIP. A missed question is better than an unwanted reply.
+Call final_answer with the single word SKIP — do not call any other tools first.
+
 ## Answering spec questions
 1. Call get_channel_pins to read the pinned spec.
 2. Call get_guild_events to get the upcoming event list.
@@ -34,10 +47,8 @@ When a Channel Category is provided, use it to infer which game is being discuss
 
 Be concise and direct. If the answer isn't in the spec or schedule, say so clearly. Do not guess tuning rules.
 
-## Passive messages
-Some messages reach you without a direct @mention — the bot detected them as potentially relevant. If the message turns out to be casual racing chat (a race incident, a reaction, banter) rather than an actual spec or rules question, respond with only: SKIP
-
-For passive messages that are genuine questions, exhaust local sources first — pins, events, and channel history. Only call web_search if the answer cannot be found there. Do not search speculatively."""
+## Passive message source priority
+For passive messages that pass the SKIP check, exhaust local sources first — pins, events, and channel history. Only call web_search if the answer cannot be found there. Do not search speculatively."""
 
 
 GT7_GLOSSARY = """## Shorthand glossary (Gran Turismo 7)
@@ -71,15 +82,17 @@ def _glossary_for_category(category_name: str | None) -> str:
     return ""
 
 
-def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None) -> str:
+def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True) -> str:
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
     glossary = _glossary_for_category(category_name)
     history_section = f"\nConversation so far:\n{thread_history}\n" if thread_history else ""
+    passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
     prompt = (
         f"{SYSTEM_PROMPT}{glossary}\n\n"
         f"Channel ID: {channel_id}\n"
         f"Guild ID: {guild_id}\n"
         f"{category_line}"
+        f"{passive_line}"
         f"{history_section}"
         f"\nQuestion: {question}"
     )
