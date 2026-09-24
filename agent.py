@@ -39,16 +39,6 @@ Call get_guild_events first. Use get_channel_pins or get_recent_messages only to
 
 When reporting event times, reproduce the <t:UNIX:F> timestamp tags exactly as returned — do not paraphrase or convert them to plain text. Discord renders these tags in each user's local timezone.
 
-## Answering handicap questions
-1. Call get_channel_pins to find two things: (a) the race spec pin, which contains the canonical base weight and power for the current car; (b) the handicap pin containing the upgrade/downgrade adjustment table. Both may be image attachments — call read_image_content on any [Image attachment: <url>] lines to extract them.
-2. Call get_recent_messages to find the weekly standings screenshot. Look for the most recent message within the past week that contains "#standings" and an [Image attachment: <url>]. Call read_image_content on that URL to extract each driver's current +/- total. If no #standings message is found, tell the user the current standings haven't been posted yet and ask them to have the organizer post the screenshot with #standings in the caption.
-   - The asking user's Discord username is provided above. Use it to find their entry automatically via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
-3. Calculate the driver's exact target settings:
-   - Look up their +/- total in the adjustment table to get the weight change % and power change %.
-   - Apply those percentages to the canonical base weight and power from the spec.
-   - Present the final weight in both lbs and kg (divide lbs by 2.205), and final power in both hp and kW (multiply hp by 0.7457).
-   - Be explicit: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W kW)."
-
 ## Game source priority
 When a Channel Category is provided, use it to infer which game is being discussed:
 - "Gran Turismo", "GT7", or similar → Gran Turismo 7. Search gran-turismo.com first, then gtplanet.net or gt7.fandom.com as fallback.
@@ -73,6 +63,8 @@ FORZA_GLOSSARY = """## Shorthand glossary (Forza Motorsport)
 - Tire compounds: ST = Street, SP = Sport, SE = Semi-Slick, SL = Slick, VT = Vintage, OF = Off-Road.
 - Homologation: restricting a car's upgrades to a defined period-correct parts list, used in some league specs to prevent optimal min-maxing."""
 
+HANDICAP_CHANNEL = "le-club-des-petits-gateaux"
+
 HANDICAP_SYSTEM = """## Handicap points formula
 
 Points earned per race determine car upgrades or downgrades for the next race.
@@ -87,6 +79,16 @@ Positive points (+) = downgrade (weight added or power reduced — car becomes s
 Negative points (-) = upgrade (weight removed or power added — car becomes faster)
 
 The specific weight/power adjustment for each point level (+1, +2, +3, +4, -1, -2, -3, -4) is posted as a screenshot in the channel pins. Call read_image_content on any [Image attachment: ...] URL returned by get_channel_pins to get the actual values."""
+
+HANDICAP_INSTRUCTIONS = """## Answering handicap questions
+1. Call get_channel_pins to find two things: (a) the race spec pin, which contains the canonical base weight and power for the current car; (b) the handicap pin containing the upgrade/downgrade adjustment table. Both may be image attachments — call read_image_content on any [Image attachment: <url>] lines to extract them.
+2. Call get_recent_messages to find the weekly standings screenshot. Look for the most recent message within the past week that contains "#standings" and an [Image attachment: <url>]. Call read_image_content on that URL to extract each driver's current +/- total. If no #standings message is found, tell the user the current standings haven't been posted yet and ask them to have the organizer post the screenshot with #standings in the caption.
+   - The asking user's Discord username is provided above. Use it to find their entry automatically via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
+3. Calculate the driver's exact target settings:
+   - Look up their +/- total in the adjustment table to get the weight change % and power change %.
+   - Apply those percentages to the canonical base weight and power from the spec.
+   - Present the final weight in both lbs and kg (divide lbs by 2.205), and final power in both hp and kW (multiply hp by 0.7457).
+   - Be explicit: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W kW).\""""
 
 
 def build_agent(tools=None):
@@ -107,15 +109,17 @@ def _glossary_for_category(category_name: str | None) -> str:
     return ""
 
 
-def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None) -> str:
+def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None) -> str:
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
     glossary = _glossary_for_category(category_name)
     history_section = f"\nConversation so far:\n{thread_history}\n" if thread_history else ""
     passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
     author_line = f"Asking user's Discord username: {author_username}\n" if author_username else ""
+    is_handicap_channel = channel_name == HANDICAP_CHANNEL
+    handicap_section = f"\n\n{HANDICAP_INSTRUCTIONS}\n\n{HANDICAP_SYSTEM}" if is_handicap_channel else ""
     prompt = (
-        f"{SYSTEM_PROMPT}{glossary}\n\n"
-        f"{HANDICAP_SYSTEM}\n\n"
+        f"{SYSTEM_PROMPT}{glossary}"
+        f"{handicap_section}\n\n"
         f"Channel ID: {channel_id}\n"
         f"Guild ID: {guild_id}\n"
         f"{category_line}"
