@@ -7,6 +7,7 @@ from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild
 from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
 from tools.gtdb_tools import get_car_specs, search_cars
+from tools.tuning_tools import get_tuning_recommendations
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,13 @@ When reporting event times, reproduce the <t:UNIX:F> timestamp tags exactly as r
 
 ## GT7 car data
 For GT7 car specs, PP, drivetrain, weight, power, group class, or acquisition questions, prefer get_car_specs and search_cars over web_search — they query a local GT7 car database and are faster and more reliable. Only fall back to web_search for GT7 data that those tools cannot answer.
+
+## Handling and tuning questions
+When a driver describes a handling problem (understeer, oversteer, snapping, instability), call get_tuning_recommendations. Do not guess parameter adjustments from memory.
+- Extract symptom, drivetrain, and any phase/throttle/elevation details from the message before calling.
+- If drivetrain is not stated and the car is known, infer it from car data or ask before calling.
+- Present recommendations as concise, plain-English advice. Map parameter names to what the driver sees in-game (e.g. "front spring rate" not "natFreqFront"). Explain the why for the top 2–3 changes.
+- If the driver gives partial context (e.g. only says "oversteer"), call without optional fields rather than asking for every detail upfront.
 
 ## Game source priority
 When a Channel Category is provided, use it to infer which game is being discussed:
@@ -109,7 +117,7 @@ HANDICAP_INSTRUCTIONS = """## Answering handicap questions
 
 def build_agent(tools=None):
     if tools is None:
-        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, calculate_handicap_settings, get_car_specs, search_cars]
+        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, calculate_handicap_settings, get_car_specs, search_cars, get_tuning_recommendations]
     model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
     return ToolCallingAgent(tools=tools, model=model)
 
