@@ -73,7 +73,7 @@ MOCK_EVENT_UNIX = int(_next_friday.timestamp())
 
 MOCK_EVENTS = f"Friday Night Lights — <t:{MOCK_EVENT_UNIX}:F> (SCHEDULED): Weekly sim racing event. Spec 01: Toyota Mark II/Chaser 450HP Sports Medium. Spec 02: Production Supertrucks on Sports Soft."
 
-MOCK_MESSAGES = """[20:00] Organizer: [Image attachment: https://cdn.discordapp.com/attachments/mock/standings.png]
+MOCK_MESSAGES = """[20:00] Organizer: #standings [Image attachment: https://cdn.discordapp.com/attachments/mock/standings.png]
 [22:12] Organizer: Alright folksies.
 Friday Night Lights SEP/4th
 Spec 01:
