@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import tempfile
 import threading
 import urllib.parse
 
@@ -11,13 +12,18 @@ _CACHE_LOCK = threading.Lock()
 
 
 def _normalize_url(url: str) -> str:
-    """Strip query params so Discord CDN signed URLs cache-hit across signature rotations."""
+    """Strip query params so Discord CDN signed URLs cache-hit across signature rotations.
+
+    Assumption: each standings image is a unique upload, so stripping query params
+    (e.g. CDN signature tokens) will never cause a stale hit for different content
+    at the same path. This is an accepted tradeoff for the current use case.
+    """
     parsed = urllib.parse.urlparse(url)
     return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, parsed.path, "", "", ""))
 
 
 def _load() -> dict:
-    # Simple unconditional disk read — the file is tiny so per-operation reads are acceptable.
+    # Simple unconditional disk read -- the file is tiny so per-operation reads are acceptable.
     if os.path.exists(_CACHE_PATH):
         try:
             with open(_CACHE_PATH) as f:
@@ -28,16 +34,30 @@ def _load() -> dict:
 
 
 def _save(cache: dict) -> None:
+    # Write to a temp file in the same directory then atomically replace, so a
+    # concurrent read never sees a truncated or partial JSON payload.
+    tmp_path = None
     try:
-        with open(_CACHE_PATH, "w") as f:
-            json.dump(cache, f, indent=2)
+        cache_dir = os.path.dirname(_CACHE_PATH)
+        with tempfile.NamedTemporaryFile(
+            mode="w", dir=cache_dir, delete=False, suffix=".tmp"
+        ) as tmp:
+            tmp_path = tmp.name
+            json.dump(cache, tmp, indent=2)
+        os.replace(tmp_path, _CACHE_PATH)
     except Exception as exc:
         logger.warning("image_cache: failed to save cache: %s", exc)
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 def get_cached(url: str) -> str | None:
     key = _normalize_url(url)
-    return _load().get(key)
+    with _CACHE_LOCK:
+        return _load().get(key)
 
 
 def set_cached(url: str, result: str) -> None:

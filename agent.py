@@ -69,7 +69,7 @@ HANDICAP_CHANNEL = "le-club-des-petits-gâteaux"
 HANDICAP_SYSTEM = """## Handicap points formula
 
 Points earned per race determine car upgrades or downgrades for the next race.
-Middle finishers earn 0 points. Points outside ±3 mean no car adjustment.
+Middle finishers earn 0 points. Drivers with a cumulative total inside ±3 (i.e., -3 to +3 inclusive) receive no car adjustment. Only ±4 or beyond triggers a weight or power change.
 
 ≤6 finishers:  1st = +1 | Last = -1
 7–9 finishers: 1st = +2, 2nd = +1 | Next-to-last = -1, Last = -2
