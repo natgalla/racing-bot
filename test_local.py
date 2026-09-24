@@ -7,6 +7,7 @@ from smolagents import tool
 
 from agent import build_agent, ask
 from classifier import classify_score, _THRESHOLD
+from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
 
 MOCK_PINS = """Friday Night Lights SEP/4th
@@ -212,6 +213,7 @@ def main():
             mock_get_guild_events,
             web_search,
             mock_read_image_content,
+            calculate_handicap_settings,
         ])
     else:
         if not os.environ.get("DISCORD_TOKEN"):

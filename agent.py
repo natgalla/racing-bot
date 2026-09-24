@@ -4,6 +4,7 @@ import os
 import unicodedata
 from smolagents import ToolCallingAgent, InferenceClientModel
 from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events, read_image_content
+from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
 
 logger = logging.getLogger(__name__)
@@ -98,14 +99,13 @@ HANDICAP_INSTRUCTIONS = """## Answering handicap questions
    - The asking user's Discord username is provided above. Use it to find their entry automatically via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
 3. Calculate the driver's exact target settings:
    - Look up their +/- total in the adjustment table to get the weight change % and power change %.
-   - Apply those percentages to the canonical base weight and power from the spec.
-   - Present the final weight in both lbs and kg (divide lbs by 2.205), and final power in both hp and kW (multiply hp by 0.7457).
-   - Be explicit: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W kW).\""""
+   - Call calculate_handicap_settings with the base weight, base power, and those percentages. Do not do this math yourself.
+   - Use the returned values to tell the driver: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W PS).\""""
 
 
 def build_agent(tools=None):
     if tools is None:
-        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content]
+        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, calculate_handicap_settings]
     model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
     return ToolCallingAgent(tools=tools, model=model)
 
