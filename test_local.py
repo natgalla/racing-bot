@@ -13,7 +13,7 @@ MOCK_PINS = """Friday Night Lights SEP/4th
 Spec 01:
 Toyota Mark II Tourer (1997)
 Toyota Mark V Chaser (1997)
-Leave all settings default, except for power, making 450HP. How you reach that power figure (and how you customize the body) is up to you. Sports Medium Tires!
+Leave all settings default, except for power, making 450HP. Base weight: 3,000 lbs. Sports Medium Tires!
 
 Spec 02:
 Ford F-150 SVT Raptor (2011)
@@ -22,6 +22,50 @@ Toyota Tundra TRD Pro (2019)
 swapped! Demon-Challenger (200,000 Cr.)
 There are specific tunes for these trucks, what I am calling Production Supertrucks. You have your choice of "the full experience" (🌶️🌶️🌶️) or a more controllable option (🌶️🌶️)— which I recommend for those who aren't very confident on controller. You will need to engine swap these vehicles to make the power required; they are on Sports Soft tires. Trust in the tunes, I spent time on this!"""
 
+MOCK_HANDICAP_PIN = """Handicap adjustment table — current month (Spec 01: Toyota Mark II/Chaser, base 3,000 lbs / 450 hp)
+[Image attachment: https://cdn.discordapp.com/attachments/mock/handicap-table.png]"""
+
+MOCK_HANDICAP_TABLE_TEXT = """\
+Upgrades (-)
++/-   Weight Removed %   Weight      Power %                HP
+-4    4%                 2,880 lbs   —                      450 hp
+-5    5%                 2,850 lbs   —                      450 hp
+-6    6%                 2,820 lbs   —                      450 hp
+-7    7%                 2,790 lbs   —                      450 hp
+-8    8%                 2,760 lbs   —                      450 hp
+-9    9%                 2,730 lbs   —                      450 hp
+-10   10%                2,700 lbs   —                      450 hp
+-11   10%                2,700 lbs   +2%                    459 hp
+-12   10%                2,700 lbs   +4%                    468 hp
+-13+  10% (capped)       2,700 lbs   +6% and climbing       continues climbing
+
+Downgrades (+)
++/-   Weight Added %    Weight      Power %                HP
++4    4%                3,120 lbs   —                      450 hp
++5    5%                3,150 lbs   —                      450 hp
++6    6%                3,180 lbs   —                      450 hp
++7    7%                3,210 lbs   —                      450 hp
++8    8%                3,240 lbs   —                      450 hp
++9    9%                3,270 lbs   —                      450 hp
++10   10%               3,300 lbs   —                      450 hp
++11   10%               3,300 lbs   -2%                    441 hp
++12   10%               3,300 lbs   -4%                    432 hp
++13+  10% (capped)      3,300 lbs   -6% and climbing       continues dropping"""
+
+MOCK_STANDINGS_TEXT = """\
+Drivers          +/-
+Driver_A           13
+Driver_B   3
+Driver_C         -2
+Driver_D       -1
+Driver_E      -8
+Driver_F            4
+Driver_G     1
+Driver_H     5
+Driver_I        2
+Driver_J  -11
+Driver_K           -2"""
+
 _next_friday = (datetime.now(tz=timezone.utc) + timedelta(days=7)).replace(
     hour=1, minute=0, second=0, microsecond=0
 )
@@ -29,7 +73,8 @@ MOCK_EVENT_UNIX = int(_next_friday.timestamp())
 
 MOCK_EVENTS = f"Friday Night Lights — <t:{MOCK_EVENT_UNIX}:F> (SCHEDULED): Weekly sim racing event. Spec 01: Toyota Mark II/Chaser 450HP Sports Medium. Spec 02: Production Supertrucks on Sports Soft."
 
-MOCK_MESSAGES = """[22:12] Organizer: Alright folksies.
+MOCK_MESSAGES = """[20:00] Organizer: [Image attachment: https://cdn.discordapp.com/attachments/mock/standings.png]
+[22:12] Organizer: Alright folksies.
 Friday Night Lights SEP/4th
 Spec 01:
 Toyota Mark II Tourer (1997)
@@ -83,7 +128,21 @@ def mock_get_channel_pins(channel_id: str) -> str:
     Args:
         channel_id: The Discord channel ID to fetch pins from.
     """
-    return f"[Pinned: 2026-08-27]\n{MOCK_PINS}"
+    return f"[Pinned: 2026-08-27]\n{MOCK_PINS}\n\n---\n\n[Pinned: 2026-09-20]\n{MOCK_HANDICAP_PIN}"
+
+
+@tool
+def mock_read_image_content(image_url: str) -> str:
+    """Extract text and table data from an image URL. Use this when get_channel_pins returns [Image attachment: <url>] lines — call it to read handicap tables or other image-based content from pinned messages.
+
+    Args:
+        image_url: The URL of the image to extract text from.
+    """
+    if "handicap-table" in image_url:
+        return MOCK_HANDICAP_TABLE_TEXT
+    if "standings" in image_url:
+        return MOCK_STANDINGS_TEXT
+    return "Image content not available in mock mode."
 
 
 @tool
@@ -146,6 +205,7 @@ def main():
             mock_get_recent_messages,
             mock_get_guild_events,
             web_search,
+            mock_read_image_content,
         ])
     else:
         if not os.environ.get("DISCORD_TOKEN"):
