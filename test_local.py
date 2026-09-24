@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from smolagents import tool
 
-from agent import build_agent, ask
+from agent import ask
 from classifier import classify_score, _THRESHOLD
 from tools.gtdb_cache import force_refresh_list
 from tools.handicap_tools import calculate_handicap_settings
@@ -166,7 +166,7 @@ def mock_search_cars(filters: str) -> str:
 
 
 @tool
-def mock_get_channel_pins(channel_id: str) -> str:
+def mock_get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
     """Fetch pinned messages from a Discord channel. Use this first for spec questions — the current race spec is typically pinned.
 
     Each pin is preceded by a [Pinned: YYYY-MM-DD] header showing when it was pinned. Use this date
@@ -220,12 +220,15 @@ def mock_get_recent_messages(channel_id: str, limit: int = 20, after_date: str =
 
 
 @tool
-def mock_get_guild_events(guild_id: str) -> str:
+def mock_get_guild_events(guild_id: str, series_name: str = "") -> str:
     """Fetch upcoming scheduled Discord events for this server. Use this for schedule/timing questions.
 
     Args:
         guild_id: The Discord guild (server) ID to fetch events from.
+        series_name: Optional case-insensitive substring to filter events by name.
     """
+    if series_name and series_name.lower() not in MOCK_EVENTS.lower():
+        return f"No scheduled events found matching '{series_name}'."
     return MOCK_EVENTS
 
 
@@ -257,7 +260,7 @@ def main():
 
     if args.mock:
         print("Mode: MOCK (no Discord token required)\n")
-        agent = build_agent(tools=[
+        mock_tools = [
             mock_get_channel_pins,
             mock_get_recent_messages,
             mock_get_guild_events,
@@ -266,15 +269,14 @@ def main():
             calculate_handicap_settings,
             mock_get_car_specs,
             mock_search_cars,
-        ])
+        ]
+        response = ask(args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username, tools=mock_tools)
     else:
         if not os.environ.get("DISCORD_TOKEN"):
             print("Error: DISCORD_TOKEN not set. Copy .env.example to .env and fill it in, or use --mock.")
             raise SystemExit(1)
         print("Mode: LIVE (using real Discord API)\n")
-        agent = build_agent()
-
-    response = ask(agent, args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username)
+        response = ask(args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username)
     print(response)
 
 
