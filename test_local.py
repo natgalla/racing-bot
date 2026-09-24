@@ -162,7 +162,7 @@ def mock_get_recent_messages(channel_id: str, limit: int = 20, after_date: str =
     if after_date:
         try:
             filter_date = datetime.fromisoformat(after_date).date()
-            mock_date = datetime(2026, 8, 27).date()
+            mock_date = datetime(2026, 9, 21).date()
             if filter_date > mock_date:
                 return "No messages found after the specified date."
         except ValueError:
