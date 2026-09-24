@@ -63,7 +63,7 @@ FORZA_GLOSSARY = """## Shorthand glossary (Forza Motorsport)
 - Tire compounds: ST = Street, SP = Sport, SE = Semi-Slick, SL = Slick, VT = Vintage, OF = Off-Road.
 - Homologation: restricting a car's upgrades to a defined period-correct parts list, used in some league specs to prevent optimal min-maxing."""
 
-HANDICAP_CHANNEL = "le-club-des-petits-gateaux"
+HANDICAP_CHANNEL = "le-club-des-petits-gâteaux"
 
 HANDICAP_SYSTEM = """## Handicap points formula
 
