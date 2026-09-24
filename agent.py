@@ -40,9 +40,13 @@ Call get_guild_events first. Use get_channel_pins or get_recent_messages only to
 When reporting event times, reproduce the <t:UNIX:F> timestamp tags exactly as returned — do not paraphrase or convert them to plain text. Discord renders these tags in each user's local timezone.
 
 ## Answering handicap questions
-1. Call get_channel_pins to find the handicap pin containing the upgrade/downgrade weight/power table. If it contains [Image attachment: <url>] lines, call read_image_content on those URLs to extract the table.
-2. Call get_recent_messages to find the weekly standings screenshot. It is posted as an image with no text label — look for the most recent message that contains only an [Image attachment: <url>] with no other content. Call read_image_content on that URL to extract each driver's current +/- total from the spreadsheet.
-3. Use the fixed points formula (defined in the system context below), the extracted weight/power table, and the driver's current +/- total to answer the question.
+1. Call get_channel_pins to find two things: (a) the race spec pin, which contains the canonical base weight and power for the current car; (b) the handicap pin containing the upgrade/downgrade adjustment table. Both may be image attachments — call read_image_content on any [Image attachment: <url>] lines to extract them.
+2. Call get_recent_messages to find the weekly standings screenshot. It is posted as an image with no text label — look for the most recent message that contains only an [Image attachment: <url>] with no other content. Call read_image_content on that URL to extract each driver's current +/- total.
+3. Calculate the driver's exact target settings:
+   - Look up their +/- total in the adjustment table to get the weight change % and power change %.
+   - Apply those percentages to the canonical base weight and power from the spec.
+   - Present the final weight in both lbs and kg (divide lbs by 2.205), and final power in both hp and kW (multiply hp by 0.7457).
+   - Be explicit: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W kW)."
 
 ## Game source priority
 When a Channel Category is provided, use it to infer which game is being discussed:
@@ -88,7 +92,7 @@ def build_agent(tools=None):
     if tools is None:
         tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content]
     model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
-    return ToolCallingAgent(tools=tools, model=model, max_steps=5)
+    return ToolCallingAgent(tools=tools, model=model, max_steps=7)
 
 
 def _glossary_for_category(category_name: str | None) -> str:
