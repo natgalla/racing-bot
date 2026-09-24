@@ -122,7 +122,13 @@ def get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") 
         if real_username not in username_map:
             username_map[real_username] = f"User{len(username_map) + 1}"
         author = username_map[real_username]
-        lines.append(f"[{ts.strftime('%H:%M')}] {author}: {m['content']}")
+        image_lines = [
+            f"[Image attachment: {att['url']}]"
+            for att in m.get("attachments", [])
+            if (att.get("content_type") or "").startswith("image/")
+        ]
+        parts = list(filter(None, [m["content"]] + image_lines))
+        lines.append(f"[{ts.strftime('%H:%M')}] {author}: {' '.join(parts)}")
     return "\n".join(lines) if lines else "No messages found after the specified date."
 
 
