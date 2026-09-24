@@ -95,6 +95,10 @@
                 <li>
                     Basic channel metadata (channel name, message timestamps)
                 </li>
+                <li>
+                    The Discord username of the user whose message triggered a
+                    response
+                </li>
             </ul>
             <p>
                 The bot scans messages passively to decide whether a message
@@ -112,9 +116,14 @@
             <p>Before any messages leave your server:</p>
             <ul>
                 <li>
-                    All Discord usernames are replaced with anonymous labels
-                    (User1, User2, and so on). The real usernames are never
-                    transmitted.
+                    The username of the user who asked the question is included
+                    in the request. This is used to match their name against
+                    standings tables when answering handicap questions.
+                </li>
+                <li>
+                    Usernames of other members appearing in recent channel
+                    messages are replaced with anonymous labels (User1, User2,
+                    and so on) before being transmitted.
                 </li>
                 <li>
                     Message content is sent only to produce a reply. It is not
