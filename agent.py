@@ -1,7 +1,8 @@
+import datetime
 import logging
 import os
 from smolagents import ToolCallingAgent, InferenceClientModel
-from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events
+from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events, read_image_content
 from tools.search_tools import web_search
 
 logger = logging.getLogger(__name__)
@@ -10,6 +11,19 @@ SYSTEM_PROMPT = """You are a helpful sim racing Discord bot assistant. Answer qu
 - The current race spec (car list, tuning rules)
 - The race schedule and upcoming events
 - Gran Turismo 7 or Forza Motorsport cars, tunes, and game data — use web_search
+
+## Passive messages (no @mention)
+When the message is marked as passive, your default is SKIP. Only respond if you are confident the message is a genuine question directed at the bot that you can actually answer.
+
+Always SKIP when:
+- The message is directed at another person, even if it mentions a racing topic (e.g. "hence me asking how to add oversteer every single week" — that's a complaint to a human, not a question for you)
+- The message is meta-commentary about the bot itself (e.g. "let's see how many ways we can trigger this")
+- The message is a joke, rhetorical aside, or frustrated remark
+- The message is banter, a race incident reaction, or general chat
+- You are not confident it's a genuine question for you
+
+When in doubt, SKIP. A missed question is better than an unwanted reply.
+Call final_answer with the single word SKIP — do not call any other tools first.
 
 ## Answering spec questions
 1. Call get_channel_pins to read the pinned spec.
@@ -34,10 +48,8 @@ When a Channel Category is provided, use it to infer which game is being discuss
 
 Be concise and direct. If the answer isn't in the spec or schedule, say so clearly. Do not guess tuning rules.
 
-## Passive messages
-Some messages reach you without a direct @mention — the bot detected them as potentially relevant. If the message turns out to be casual racing chat (a race incident, a reaction, banter) rather than an actual spec or rules question, respond with only: SKIP
-
-For passive messages that are genuine questions, exhaust local sources first — pins, events, and channel history. Only call web_search if the answer cannot be found there. Do not search speculatively."""
+## Passive message source priority
+For passive messages that pass the SKIP check, exhaust local sources first — pins, events, and channel history. Only call web_search if the answer cannot be found there. Do not search speculatively."""
 
 
 GT7_GLOSSARY = """## Shorthand glossary (Gran Turismo 7)
@@ -52,12 +64,49 @@ FORZA_GLOSSARY = """## Shorthand glossary (Forza Motorsport)
 - Tire compounds: ST = Street, SP = Sport, SE = Semi-Slick, SL = Slick, VT = Vintage, OF = Off-Road.
 - Homologation: restricting a car's upgrades to a defined period-correct parts list, used in some league specs to prevent optimal min-maxing."""
 
+HANDICAP_CHANNEL = "le-club-des-petits-gâteaux"
+
+HANDICAP_SYSTEM = """## Handicap points formula
+
+Points earned per race determine car upgrades or downgrades for the next race.
+Middle finishers earn 0 points. Points outside ±3 mean no car adjustment.
+
+≤6 finishers:  1st = +1 | Last = -1
+7–9 finishers: 1st = +2, 2nd = +1 | Next-to-last = -1, Last = -2
+10–13 finishers: 1st = +3, 2nd = +2, 3rd = +1 | Third-from-last = -1, Next-to-last = -2, Last = -3
+14+ finishers: 1st = +4, 2nd = +3, 3rd = +2, 4th = +1 | Fourth-from-last = -1, Third-from-last = -2, Next-to-last = -3, Last = -4
+
+Positive points (+) = downgrade (weight added or power reduced — car becomes slower)
+Negative points (-) = upgrade (weight removed or power added — car becomes faster)
+
+The specific weight/power adjustment for each point level (+1, +2, +3, +4, -1, -2, -3, -4) is posted as a screenshot in the channel pins. Call read_image_content on any [Image attachment: ...] URL returned by get_channel_pins to get the actual values."""
+
+SERIES_SCHEDULE = """## Series schedule
+Races run on Wednesdays. Each series is a monthly 4-week cadence (up to 4 Wednesdays per month). The series start date is the first Wednesday on or after the spec handicap package pin date. Use today's date to determine how many races have been run and how far back to look for the standings image."""
+
+HANDICAP_INSTRUCTIONS = """## Answering handicap questions
+1. Call get_channel_pins. You are looking for two things:
+   - The spec handicap package: a pin annotated [Spec handicap package: detunes + up-tunes] containing two image attachments. This pin marks the series start. Call read_image_content on both image URLs to get the detune and up-tune adjustment tables. The pin date is the series anchor — the series start is the first Wednesday on or after that date.
+   - The race spec pin: contains the canonical base weight and power for the current car.
+2. Call get_recent_messages to find the weekly standings screenshot. The standings image is posted the day after each Wednesday race, sometimes a few days late. To find the right window:
+   - Identify the most recent Wednesday on or before today.
+   - Look back from that Wednesday up to 10 days total (covers the race day plus a 3-day late-post buffer).
+   - Search for the most recent message in that window containing "#standings" and an [Image attachment: <url>]. Call read_image_content on that URL to extract each driver's current +/- total.
+   - If nothing is found in 10 days, widen to 14 days before concluding the standings haven't been posted yet.
+   - If still nothing, tell the user the current standings haven't been posted yet and ask them to have the organizer post the screenshot with #standings in the caption.
+   - The asking user's Discord username is provided above. Use it to find their entry automatically via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
+3. Calculate the driver's exact target settings:
+   - Look up their +/- total in the adjustment table to get the weight change % and power change %.
+   - Apply those percentages to the canonical base weight and power from the spec.
+   - Present the final weight in both lbs and kg (divide lbs by 2.205), and final power in both hp and kW (multiply hp by 0.7457).
+   - Be explicit: "Set your ballast/weight to X lbs (Y kg) and your power to Z hp (W kW).\""""
+
 
 def build_agent(tools=None):
     if tools is None:
-        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search]
+        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content]
     model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
-    return ToolCallingAgent(tools=tools, model=model, max_steps=5)
+    return ToolCallingAgent(tools=tools, model=model, max_steps=10)
 
 
 def _glossary_for_category(category_name: str | None) -> str:
@@ -71,15 +120,25 @@ def _glossary_for_category(category_name: str | None) -> str:
     return ""
 
 
-def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None) -> str:
+def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None) -> str:
+    today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    date_line = f"Today's date: {today}\n"
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
     glossary = _glossary_for_category(category_name)
     history_section = f"\nConversation so far:\n{thread_history}\n" if thread_history else ""
+    passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
+    author_line = f"Asking user's Discord username: {author_username}\n" if author_username else ""
+    is_handicap_channel = channel_name == HANDICAP_CHANNEL
+    handicap_section = f"\n\n{SERIES_SCHEDULE}\n\n{HANDICAP_INSTRUCTIONS}\n\n{HANDICAP_SYSTEM}" if is_handicap_channel else ""
     prompt = (
-        f"{SYSTEM_PROMPT}{glossary}\n\n"
+        f"{SYSTEM_PROMPT}{glossary}"
+        f"{handicap_section}\n\n"
         f"Channel ID: {channel_id}\n"
         f"Guild ID: {guild_id}\n"
+        f"{date_line}"
         f"{category_line}"
+        f"{passive_line}"
+        f"{author_line}"
         f"{history_section}"
         f"\nQuestion: {question}"
     )
