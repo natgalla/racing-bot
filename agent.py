@@ -41,10 +41,7 @@ When reporting event times, reproduce the <t:UNIX:F> timestamp tags exactly as r
 
 ## Answering handicap questions
 1. Call get_channel_pins to find two things: (a) the race spec pin, which contains the canonical base weight and power for the current car; (b) the handicap pin containing the upgrade/downgrade adjustment table. Both may be image attachments — call read_image_content on any [Image attachment: <url>] lines to extract them.
-2. Call get_recent_messages to find the weekly standings screenshot. Search as follows:
-   - First, look for the most recent message within the past week that contains "#standings" and an [Image attachment: <url>]. This is the preferred format.
-   - If no #standings message is found, fall back to the most recent message that contains only an [Image attachment: <url>] with no other text content.
-   Call read_image_content on the identified URL to extract each driver's current +/- total.
+2. Call get_recent_messages to find the weekly standings screenshot. Look for the most recent message within the past week that contains "#standings" and an [Image attachment: <url>]. Call read_image_content on that URL to extract each driver's current +/- total. If no #standings message is found, tell the user the current standings haven't been posted yet and ask them to have the organizer post the screenshot with #standings in the caption.
    - The asking user's Discord username is provided above. Use it to find their entry automatically via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
 3. Calculate the driver's exact target settings:
    - Look up their +/- total in the adjustment table to get the weight change % and power change %.
