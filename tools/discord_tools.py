@@ -3,6 +3,7 @@ import os
 import requests
 from datetime import datetime
 from smolagents import tool
+from .image_cache import get_cached, set_cached
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,14 @@ DISCORD_API = "https://discord.com/api/v10"
 
 def _headers():
     return {"Authorization": f"Bot {os.environ['DISCORD_TOKEN']}"}
+
+
+def _image_lines(obj: dict) -> list[str]:
+    return [
+        f"[Image attachment: {att['url']}]"
+        for att in obj.get("attachments", [])
+        if (att.get("content_type") or "").startswith("image/")
+    ]
 
 
 @tool
@@ -38,11 +47,13 @@ def get_channel_pins(channel_id: str) -> str:
         except (ValueError, AttributeError):
             pin_date = "unknown"
         content = p.get("content", "")
-        image_lines = []
-        for att in p.get("attachments", []):
-            if (att.get("content_type") or "").startswith("image/"):
-                image_lines.append(f"[Image attachment: {att['url']}]")
-        body = "\n".join(filter(None, [content] + image_lines))
+        image_lines = _image_lines(p)
+        parts = [content] if content else []
+        # Exactly two images signals the spec handicap package (detunes + up-tunes), a deliberate posting convention.
+        if len(image_lines) == 2:
+            parts = ["[Spec handicap package: detunes + up-tunes]"] + parts
+        parts += image_lines
+        body = "\n".join(filter(None, parts))
         sections.append(f"[Pinned: {pin_date}]\n{body}")
     return "\n\n---\n\n".join(sections)
 
@@ -54,6 +65,9 @@ def read_image_content(image_url: str) -> str:
     Args:
         image_url: The URL of the image to extract text from.
     """
+    cached = get_cached(image_url)
+    if cached is not None:
+        return cached
     try:
         from huggingface_hub import InferenceClient
     except ImportError as exc:
@@ -77,9 +91,12 @@ def read_image_content(image_url: str) -> str:
             ],
             max_tokens=1500,
         )
-        return response.choices[0].message.content
+        result = response.choices[0].message.content or ""
+        if result:
+            set_cached(image_url, result)
+        return result
     except Exception as exc:
-        logger.error("read_image_content failed: %s", exc)
+        logger.exception("read_image_content failed")
         return f"Failed to read image content: {exc}"
 
 
@@ -122,11 +139,7 @@ def get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") 
         if real_username not in username_map:
             username_map[real_username] = f"User{len(username_map) + 1}"
         author = username_map[real_username]
-        image_lines = [
-            f"[Image attachment: {att['url']}]"
-            for att in m.get("attachments", [])
-            if (att.get("content_type") or "").startswith("image/")
-        ]
+        image_lines = _image_lines(m)
         parts = list(filter(None, [m["content"]] + image_lines))
         lines.append(f"[{ts.strftime('%H:%M')}] {author}: {' '.join(parts)}")
     return "\n".join(lines) if lines else "No messages found after the specified date."

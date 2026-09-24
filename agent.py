@@ -1,5 +1,7 @@
+import datetime
 import logging
 import os
+import unicodedata
 from smolagents import ToolCallingAgent, InferenceClientModel
 from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events, read_image_content
 from tools.search_tools import web_search
@@ -63,12 +65,12 @@ FORZA_GLOSSARY = """## Shorthand glossary (Forza Motorsport)
 - Tire compounds: ST = Street, SP = Sport, SE = Semi-Slick, SL = Slick, VT = Vintage, OF = Off-Road.
 - Homologation: restricting a car's upgrades to a defined period-correct parts list, used in some league specs to prevent optimal min-maxing."""
 
-HANDICAP_CHANNEL = "le-club-des-petits-gâteaux"
+HANDICAP_CHANNEL = unicodedata.normalize("NFC", "le-club-des-petits-gâteaux")
 
 HANDICAP_SYSTEM = """## Handicap points formula
 
 Points earned per race determine car upgrades or downgrades for the next race.
-Middle finishers earn 0 points. Points outside ±3 mean no car adjustment.
+Middle finishers earn 0 points. Drivers with a cumulative total inside ±3 (i.e., -3 to +3 inclusive) receive no car adjustment. Only ±4 or beyond triggers a weight or power change.
 
 ≤6 finishers:  1st = +1 | Last = -1
 7–9 finishers: 1st = +2, 2nd = +1 | Next-to-last = -1, Last = -2
@@ -80,9 +82,19 @@ Negative points (-) = upgrade (weight removed or power added — car becomes fas
 
 The specific weight/power adjustment for each point level (+1, +2, +3, +4, -1, -2, -3, -4) is posted as a screenshot in the channel pins. Call read_image_content on any [Image attachment: ...] URL returned by get_channel_pins to get the actual values."""
 
+SERIES_SCHEDULE = """## Series schedule
+Races run on Wednesdays. Each series is a monthly 4-week cadence (up to 4 Wednesdays per month). The series start date is the first Wednesday on or after the spec handicap package pin date. Use today's date to determine how many races have been run and how far back to look for the standings image."""
+
 HANDICAP_INSTRUCTIONS = """## Answering handicap questions
-1. Call get_channel_pins to find two things: (a) the race spec pin, which contains the canonical base weight and power for the current car; (b) the handicap pin containing the upgrade/downgrade adjustment table. Both may be image attachments — call read_image_content on any [Image attachment: <url>] lines to extract them.
-2. Call get_recent_messages to find the weekly standings screenshot. Look for the most recent message within the past week that contains "#standings" and an [Image attachment: <url>]. Call read_image_content on that URL to extract each driver's current +/- total. If no #standings message is found, tell the user the current standings haven't been posted yet and ask them to have the organizer post the screenshot with #standings in the caption.
+1. Call get_channel_pins. You are looking for two things:
+   - The spec handicap package: a pin annotated [Spec handicap package: detunes + up-tunes] containing two image attachments. This pin marks the series start. Call read_image_content on both image URLs to get the detune and up-tune adjustment tables. The pin date is the series anchor — the series start is the first Wednesday on or after that date.
+   - The race spec pin: contains the canonical base weight and power for the current car.
+2. Call get_recent_messages to find the weekly standings screenshot. The standings image is posted the day after each Wednesday race, sometimes a few days late. To find the right window:
+   - Identify the most recent Wednesday on or before today.
+   - Look back from that Wednesday up to 10 days total (covers the race day plus a 3-day late-post buffer).
+   - Search for the most recent message in that window containing "#standings" and an [Image attachment: <url>]. Call read_image_content on that URL to extract each driver's current +/- total.
+   - If nothing is found in 10 days, widen to 14 days before concluding the standings haven't been posted yet.
+   - If still nothing, tell the user the current standings haven't been posted yet and ask them to have the organizer post the screenshot with #standings in the caption.
    - The asking user's Discord username is provided above. Use it to find their entry automatically via partial/fuzzy match (e.g. "Driver_B" matches "Driver_B") — do not ask them to provide their name. Only ask for clarification if multiple entries are a plausible match.
 3. Calculate the driver's exact target settings:
    - Look up their +/- total in the adjustment table to get the weight change % and power change %.
@@ -110,18 +122,21 @@ def _glossary_for_category(category_name: str | None) -> str:
 
 
 def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None) -> str:
+    today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+    date_line = f"Today's date: {today}\n"
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
     glossary = _glossary_for_category(category_name)
     history_section = f"\nConversation so far:\n{thread_history}\n" if thread_history else ""
     passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
     author_line = f"Asking user's Discord username: {author_username}\n" if author_username else ""
-    is_handicap_channel = channel_name == HANDICAP_CHANNEL
-    handicap_section = f"\n\n{HANDICAP_INSTRUCTIONS}\n\n{HANDICAP_SYSTEM}" if is_handicap_channel else ""
+    is_handicap_channel = unicodedata.normalize("NFC", channel_name or "") == HANDICAP_CHANNEL
+    handicap_section = f"\n\n{SERIES_SCHEDULE}\n\n{HANDICAP_INSTRUCTIONS}\n\n{HANDICAP_SYSTEM}" if is_handicap_channel else ""
     prompt = (
         f"{SYSTEM_PROMPT}{glossary}"
         f"{handicap_section}\n\n"
         f"Channel ID: {channel_id}\n"
         f"Guild ID: {guild_id}\n"
+        f"{date_line}"
         f"{category_line}"
         f"{passive_line}"
         f"{author_line}"

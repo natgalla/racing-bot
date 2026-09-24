@@ -80,13 +80,15 @@ async def on_message(message):
         thread_history = await fetch_thread_history(message.channel, client.user.id)
 
     loop = asyncio.get_running_loop()
-    category_name = message.channel.category.name if message.channel.category else None
+    channel = message.channel
+    channel_name = channel.parent.name if isinstance(channel, discord.Thread) else channel.name
+    category_name = channel.category.name if channel.category else None
 
     if not is_mention:
         async with message.channel.typing():
             logger.info("agent invoked channel=%s", message.channel.id)
             response = await loop.run_in_executor(
-                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.username, message.channel.name
+                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, is_mention=False, author_username=message.author.username, channel_name=channel_name
             )
         if response.strip().upper() == "SKIP":
             logger.info("response suppressed (SKIP)")
@@ -108,7 +110,7 @@ async def on_message(message):
         async with (thread or message.channel).typing():
             logger.info("agent invoked channel=%s", message.channel.id)
             response = await loop.run_in_executor(
-                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, True, message.author.username, message.channel.name
+                None, ask, agent, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, is_mention=True, author_username=message.author.username, channel_name=channel_name
             )
         response = response.strip() + " 🤖"
         logger.info("response sent channel=%s length=%d", message.channel.id, len(response))
