@@ -22,35 +22,37 @@ Toyota Tundra TRD Pro (2019)
 swapped! Demon-Challenger (200,000 Cr.)
 There are specific tunes for these trucks, what I am calling Production Supertrucks. You have your choice of "the full experience" (🌶️🌶️🌶️) or a more controllable option (🌶️🌶️)— which I recommend for those who aren't very confident on controller. You will need to engine swap these vehicles to make the power required; they are on Sports Soft tires. Trust in the tunes, I spent time on this!"""
 
-MOCK_HANDICAP_PIN = """Handicap adjustment table — current month (Spec 01: Toyota Mark II/Chaser, base 3,000 lbs / 450 hp)
-[Image attachment: https://cdn.discordapp.com/attachments/mock/handicap-table.png]"""
+MOCK_HANDICAP_PIN = """[Spec handicap package: detunes + up-tunes]
+[Image attachment: https://cdn.discordapp.com/attachments/mock/detunes.png]
+[Image attachment: https://cdn.discordapp.com/attachments/mock/uptunes.png]"""
 
-MOCK_HANDICAP_TABLE_TEXT = """\
-Upgrades (-)
-+/-   Weight Removed %   Weight      Power %                HP
--4    4%                 2,880 lbs   —                      450 hp
--5    5%                 2,850 lbs   —                      450 hp
--6    6%                 2,820 lbs   —                      450 hp
--7    7%                 2,790 lbs   —                      450 hp
--8    8%                 2,760 lbs   —                      450 hp
--9    9%                 2,730 lbs   —                      450 hp
--10   10%                2,700 lbs   —                      450 hp
--11   10%                2,700 lbs   +2%                    459 hp
--12   10%                2,700 lbs   +4%                    468 hp
--13+  10% (capped)       2,700 lbs   +6% and climbing       continues climbing
+MOCK_DETUNE_TEXT = """\
+Downgrades (positive points — car becomes slower)
++/-   Weight Added %    Weight      Power %    HP
++4    4%                3,120 lbs   —          450 hp
++5    5%                3,150 lbs   —          450 hp
++6    6%                3,180 lbs   —          450 hp
++7    7%                3,210 lbs   —          450 hp
++8    8%                3,240 lbs   —          450 hp
++9    9%                3,270 lbs   —          450 hp
++10   10%               3,300 lbs   —          450 hp
++11   10%               3,300 lbs   -2%        441 hp
++12   10%               3,300 lbs   -4%        432 hp
++13+  10% (capped)      3,300 lbs   -6%+       continues dropping"""
 
-Downgrades (+)
-+/-   Weight Added %    Weight      Power %                HP
-+4    4%                3,120 lbs   —                      450 hp
-+5    5%                3,150 lbs   —                      450 hp
-+6    6%                3,180 lbs   —                      450 hp
-+7    7%                3,210 lbs   —                      450 hp
-+8    8%                3,240 lbs   —                      450 hp
-+9    9%                3,270 lbs   —                      450 hp
-+10   10%               3,300 lbs   —                      450 hp
-+11   10%               3,300 lbs   -2%                    441 hp
-+12   10%               3,300 lbs   -4%                    432 hp
-+13+  10% (capped)      3,300 lbs   -6% and climbing       continues dropping"""
+MOCK_UPTUNE_TEXT = """\
+Upgrades (negative points — car becomes faster)
++/-   Weight Removed %   Weight      Power %    HP
+-4    4%                 2,880 lbs   —          450 hp
+-5    5%                 2,850 lbs   —          450 hp
+-6    6%                 2,820 lbs   —          450 hp
+-7    7%                 2,790 lbs   —          450 hp
+-8    8%                 2,760 lbs   —          450 hp
+-9    9%                 2,730 lbs   —          450 hp
+-10   10%                2,700 lbs   —          450 hp
+-11   10%                2,700 lbs   +2%        459 hp
+-12   10%                2,700 lbs   +4%        468 hp
+-13+  10% (capped)       2,700 lbs   +6%+       continues climbing"""
 
 MOCK_STANDINGS_TEXT = """\
 Drivers          +/-
@@ -128,7 +130,7 @@ def mock_get_channel_pins(channel_id: str) -> str:
     Args:
         channel_id: The Discord channel ID to fetch pins from.
     """
-    return f"[Pinned: 2026-08-27]\n{MOCK_PINS}\n\n---\n\n[Pinned: 2026-09-20]\n{MOCK_HANDICAP_PIN}"
+    return f"[Pinned: 2026-08-27]\n{MOCK_PINS}\n\n---\n\n[Pinned: 2026-09-17]\n{MOCK_HANDICAP_PIN}"
 
 
 @tool
@@ -138,8 +140,10 @@ def mock_read_image_content(image_url: str) -> str:
     Args:
         image_url: The URL of the image to extract text from.
     """
-    if "handicap-table" in image_url:
-        return MOCK_HANDICAP_TABLE_TEXT
+    if "detunes" in image_url:
+        return MOCK_DETUNE_TEXT
+    if "uptunes" in image_url:
+        return MOCK_UPTUNE_TEXT
     if "standings" in image_url:
         return MOCK_STANDINGS_TEXT
     return "Image content not available in mock mode."
@@ -188,6 +192,8 @@ def main():
     parser.add_argument("--mock", action="store_true", help="Use mock Discord tools (real web search still runs)")
     parser.add_argument("--channel-id", default="000000000000000000", help="Discord channel ID")
     parser.add_argument("--guild-id", default="000000000000000000", help="Discord guild ID")
+    parser.add_argument("--channel-name", default=None, help="Discord channel name (use 'le-club-des-petits-gâteaux' to test handicap path)")
+    parser.add_argument("--author-username", default=None, help="Discord username of the asking user")
     args = parser.parse_args()
 
     load_dotenv()
@@ -214,7 +220,7 @@ def main():
         print("Mode: LIVE (using real Discord API)\n")
         agent = build_agent()
 
-    response = ask(agent, args.question, args.channel_id, args.guild_id)
+    response = ask(agent, args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username)
     print(response)
 
 
