@@ -10,6 +10,7 @@ from classifier import classify_score, _THRESHOLD
 from tools.gtdb_cache import force_refresh_list
 from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
+from tools.tuning_tools import get_tuning_recommendations
 
 MOCK_PINS = """Friday Night Lights SEP/4th
 Spec 01:
@@ -174,6 +175,7 @@ def mock_get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
 
     Args:
         channel_id: The Discord channel ID to fetch pins from.
+        max_pins: Maximum number of pins to return (default 5, newest first).
     """
     return f"[Pinned: 2026-08-27]\n{MOCK_PINS}\n\n---\n\n[Pinned: 2026-09-17]\n{MOCK_HANDICAP_PIN}"
 
@@ -269,6 +271,7 @@ def main():
             calculate_handicap_settings,
             mock_get_car_specs,
             mock_search_cars,
+            get_tuning_recommendations,
         ]
         response = ask(args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username, tools=mock_tools)
     else:
