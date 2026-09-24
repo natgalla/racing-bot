@@ -1,7 +1,7 @@
 import logging
 import os
 from smolagents import ToolCallingAgent, InferenceClientModel
-from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events
+from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events, read_image_content
 from tools.search_tools import web_search
 
 logger = logging.getLogger(__name__)
@@ -39,6 +39,11 @@ Call get_guild_events first. Use get_channel_pins or get_recent_messages only to
 
 When reporting event times, reproduce the <t:UNIX:F> timestamp tags exactly as returned — do not paraphrase or convert them to plain text. Discord renders these tags in each user's local timezone.
 
+## Answering handicap questions
+1. Call get_channel_pins to find the handicap pin.
+2. If the pin contains any [Image attachment: <url>] lines, call read_image_content on those URLs to extract the weight/power adjustment table.
+3. Use the fixed points formula (defined in the system context below) together with the extracted table to answer the question.
+
 ## Game source priority
 When a Channel Category is provided, use it to infer which game is being discussed:
 - "Gran Turismo", "GT7", or similar → Gran Turismo 7. Search gran-turismo.com first, then gtplanet.net or gt7.fandom.com as fallback.
@@ -63,10 +68,25 @@ FORZA_GLOSSARY = """## Shorthand glossary (Forza Motorsport)
 - Tire compounds: ST = Street, SP = Sport, SE = Semi-Slick, SL = Slick, VT = Vintage, OF = Off-Road.
 - Homologation: restricting a car's upgrades to a defined period-correct parts list, used in some league specs to prevent optimal min-maxing."""
 
+HANDICAP_SYSTEM = """## Handicap points formula
+
+Points earned per race determine car upgrades or downgrades for the next race.
+Middle finishers earn 0 points. Points outside ±3 mean no car adjustment.
+
+≤6 finishers:  1st = +1 | Last = -1
+7–9 finishers: 1st = +2, 2nd = +1 | Next-to-last = -1, Last = -2
+10–13 finishers: 1st = +3, 2nd = +2, 3rd = +1 | Third-from-last = -1, Next-to-last = -2, Last = -3
+14+ finishers: 1st = +4, 2nd = +3, 3rd = +2, 4th = +1 | Fourth-from-last = -1, Third-from-last = -2, Next-to-last = -3, Last = -4
+
+Positive points (+) = downgrade (weight added or power reduced — car becomes slower)
+Negative points (-) = upgrade (weight removed or power added — car becomes faster)
+
+The specific weight/power adjustment for each point level (+1, +2, +3, +4, -1, -2, -3, -4) is posted as a screenshot in the channel pins. Call read_image_content on any [Image attachment: ...] URL returned by get_channel_pins to get the actual values."""
+
 
 def build_agent(tools=None):
     if tools is None:
-        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search]
+        tools = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content]
     model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
     return ToolCallingAgent(tools=tools, model=model, max_steps=5)
 
@@ -89,6 +109,7 @@ def ask(agent, question: str, channel_id: str, guild_id: str, category_name: str
     passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
     prompt = (
         f"{SYSTEM_PROMPT}{glossary}\n\n"
+        f"{HANDICAP_SYSTEM}\n\n"
         f"Channel ID: {channel_id}\n"
         f"Guild ID: {guild_id}\n"
         f"{category_line}"

@@ -37,8 +37,50 @@ def get_channel_pins(channel_id: str) -> str:
             pin_date = datetime.fromisoformat(raw_date.replace("Z", "+00:00")).strftime("%Y-%m-%d")
         except (ValueError, AttributeError):
             pin_date = "unknown"
-        sections.append(f"[Pinned: {pin_date}]\n{p['content']}")
+        content = p.get("content", "")
+        image_lines = []
+        for att in p.get("attachments", []):
+            if (att.get("content_type") or "").startswith("image/"):
+                image_lines.append(f"[Image attachment: {att['url']}]")
+        body = "\n".join(filter(None, [content] + image_lines))
+        sections.append(f"[Pinned: {pin_date}]\n{body}")
     return "\n\n---\n\n".join(sections)
+
+
+@tool
+def read_image_content(image_url: str) -> str:
+    """Extract text and table data from an image URL. Use this when get_channel_pins returns [Image attachment: <url>] lines — call it to read handicap tables or other image-based content from pinned messages.
+
+    Args:
+        image_url: The URL of the image to extract text from.
+    """
+    try:
+        from huggingface_hub import InferenceClient
+    except ImportError as exc:
+        logger.error("read_image_content: huggingface_hub not available: %s", exc)
+        return "Image reading is unavailable — huggingface_hub package not installed."
+    try:
+        client = InferenceClient(token=os.environ.get("HF_TOKEN"))
+        response = client.chat.completions.create(
+            model="meta-llama/Llama-3.2-11B-Vision-Instruct",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": image_url}},
+                        {
+                            "type": "text",
+                            "text": "Extract all text and table data from this image exactly as shown. Preserve table structure as a text table. Do not summarise or interpret — transcribe verbatim.",
+                        },
+                    ],
+                }
+            ],
+            max_tokens=1500,
+        )
+        return response.choices[0].message.content
+    except Exception as exc:
+        logger.error("read_image_content failed: %s", exc)
+        return f"Failed to read image content: {exc}"
 
 
 @tool
