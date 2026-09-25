@@ -69,7 +69,7 @@ Be concise and direct. If the answer isn't in the spec or schedule, say so clear
 If a question is not about the race spec, schedule, car data, tuning, handicap, or GT7/Forza game mechanics, say "That's not something I can help with" and stop. Do not guess or fabricate an answer.
 
 ## Passive message source priority
-For passive messages that pass the SKIP check, exhaust local sources first — pins, events, and channel history. Only call web_search if the answer cannot be found there. Do not search speculatively."""
+For passive messages that pass the SKIP check, use only local sources — pins, events, channel history, and the GT7 car database. If the answer is not available from those sources, SKIP rather than guessing."""
 
 
 GT7_GLOSSARY = """## Shorthand glossary (Gran Turismo 7)
@@ -115,6 +115,7 @@ HANDICAP_INSTRUCTIONS = """## Answering handicap questions
 
 HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, read_image_content, calculate_handicap_settings]
 GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, get_car_specs, search_cars, get_tuning_recommendations]
+PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, read_image_content, get_car_specs, search_cars, get_tuning_recommendations]
 
 
 def build_agent(tools=None):
@@ -147,7 +148,12 @@ def ask(question: str, channel_id: str, guild_id: str, category_name: str | None
     if tools is not None:
         agent = build_agent(tools=tools)
     else:
-        agent = build_agent(tools=HANDICAP_TOOLS if is_handicap_channel else GENERAL_TOOLS)
+        if is_handicap_channel:
+            agent = build_agent(tools=HANDICAP_TOOLS)
+        elif not is_mention:
+            agent = build_agent(tools=PASSIVE_TOOLS)
+        else:
+            agent = build_agent(tools=GENERAL_TOOLS)
     handicap_section = f"\n\n{SERIES_SCHEDULE}\n\n{HANDICAP_INSTRUCTIONS}\n\n{HANDICAP_SYSTEM}" if is_handicap_channel else ""
     prompt = (
         f"{SYSTEM_PROMPT}{glossary}"
