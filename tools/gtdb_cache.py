@@ -298,13 +298,19 @@ def get_detail(slug: str) -> dict:
         return entry
 
 
+def _car_fingerprint(cars: list[dict]) -> set[tuple]:
+    return {(c.get("slug"), c.get("pp")) for c in cars}
+
+
 def force_refresh_list() -> None:
     with _LIST_LOCK:
         cars = _scrape_list()
-        _save_json(
-            _LIST_CACHE_PATH,
-            {
-                "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "cars": cars,
-            },
-        )
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        existing = _load_json(_LIST_CACHE_PATH)
+        if existing.get("cars") and _car_fingerprint(cars) == _car_fingerprint(existing["cars"]):
+            existing["fetched_at"] = now
+            _save_json(_LIST_CACHE_PATH, existing)
+            logger.info("gtdb_cache: car list unchanged, TTL reset")
+        else:
+            _save_json(_LIST_CACHE_PATH, {"fetched_at": now, "cars": cars})
+            logger.info("gtdb_cache: car list updated (%d cars)", len(cars))
