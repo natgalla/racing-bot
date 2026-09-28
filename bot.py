@@ -6,7 +6,7 @@ import re
 import discord
 from dotenv import load_dotenv
 from agent import ask
-from classifier import classify_score
+from classifier_jev import classify_score, _THRESHOLD as _RELEVANCE_THRESHOLD
 
 logging.basicConfig(
     level=logging.INFO,
@@ -65,7 +65,7 @@ async def on_message(message):
             return
         loop = asyncio.get_running_loop()
         score = await loop.run_in_executor(None, classify_score, message.content)
-        relevant = score >= float(os.environ.get("RELEVANCE_THRESHOLD", "0.75"))
+        relevant = score >= _RELEVANCE_THRESHOLD
         logger.info("classifier verdict=%s score=%.3f message=%r", relevant, score, message.content[:80])
         if not relevant:
             return
