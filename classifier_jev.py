@@ -3,7 +3,7 @@ import os
 
 from typesafe_sdk import Noul, TypeSafeClient
 
-_THRESHOLD = float(os.environ.get("RELEVANCE_THRESHOLD", "0.75"))
+_THRESHOLD = float(os.environ.get("RELEVANCE_THRESHOLD", "0.50"))
 
 
 def classify_score(text: str) -> float:
