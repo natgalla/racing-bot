@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from smolagents import tool
 
 from agent import ask
-from classifier import classify_score, _THRESHOLD
 from tools.gtdb_cache import force_refresh_list
 from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
@@ -244,6 +243,7 @@ def main():
     parser.add_argument("--guild-id", default="000000000000000000", help="Discord guild ID")
     parser.add_argument("--channel-name", default=None, help="Discord channel name (use 'le-club-des-petits-gâteaux' to test handicap path)")
     parser.add_argument("--author-username", default=None, help="Discord username of the asking user")
+    parser.add_argument("--jev", action="store_true", help="Use Jev classifier instead of HuggingFace zero-shot")
     parser.add_argument("--refresh-gtdb", action="store_true", help="Force-refresh the GT7 car list cache before running")
     args = parser.parse_args()
 
@@ -255,9 +255,13 @@ def main():
         print("Done.\n")
 
     if args.classify:
-        score = classify_score(args.question)
-        verdict = "PASS" if score >= _THRESHOLD else "FAIL"
-        print(f"Score: {score:.3f}  Threshold: {_THRESHOLD}  [{verdict}]")
+        if args.jev:
+            from classifier_jev import classify_score as _score, _THRESHOLD as _thresh
+        else:
+            from classifier import classify_score as _score, _THRESHOLD as _thresh
+        score = _score(args.question)
+        verdict = "PASS" if score >= _thresh else "FAIL"
+        print(f"Score: {score:.3f}  Threshold: {_thresh}  [{verdict}]")
         return
 
     if args.mock:
