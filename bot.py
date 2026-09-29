@@ -66,7 +66,8 @@ async def on_message(message):
         loop = asyncio.get_running_loop()
         score = await loop.run_in_executor(None, classify_score, message.content)
         relevant = score >= _RELEVANCE_THRESHOLD
-        logger.info("classifier verdict=%s score=%.3f message=%r", relevant, score, message.content[:80])
+        _ch_name = message.channel.parent.name if isinstance(message.channel, discord.Thread) else message.channel.name
+        logger.info("classifier verdict=%s score=%.3f channel=%s", relevant, score, _ch_name)
         if not relevant:
             return
 
@@ -85,15 +86,15 @@ async def on_message(message):
     category_name = channel.category.name if channel.category else None
 
     if not is_mention:
-        logger.info("agent invoked channel=%s", message.channel.id)
+        logger.info("agent invoked channel=%s", channel_name)
         response = await loop.run_in_executor(
             None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name)
         )
         if response.strip().upper() == "SKIP":
-            logger.info("response suppressed (SKIP)")
+            logger.info("response=SKIP channel=%s", channel_name)
             return
         response = response.strip() + " 🤖"
-        logger.info("response sent channel=%s length=%d", message.channel.id, len(response))
+        logger.info("response=sent length=%d channel=%s", len(response), channel_name)
         try:
             thread = await message.create_thread(name=question[:100])
             await thread.send(response)
@@ -107,12 +108,12 @@ async def on_message(message):
             send = message.reply
             thread = None
         async with (thread or message.channel).typing():
-            logger.info("agent invoked channel=%s", message.channel.id)
+            logger.info("agent invoked channel=%s", channel_name)
             response = await loop.run_in_executor(
                 None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, True, message.author.name, channel_name)
             )
         response = response.strip() + " 🤖"
-        logger.info("response sent channel=%s length=%d", message.channel.id, len(response))
+        logger.info("response=sent length=%d channel=%s", len(response), channel_name)
         await send(response)
 
 
