@@ -234,6 +234,43 @@ def mock_get_guild_events(guild_id: str, series_name: str = "") -> str:
 
 
 
+def _run_dm_session(args, tools):
+    print("Mode: DM session (multi-turn). Type 'quit' or Ctrl-C to exit.\n")
+    history_lines = []
+    first_question = args.question if hasattr(args, "question") and args.question else None
+
+    while True:
+        if first_question:
+            user_input = first_question
+            first_question = None
+        else:
+            try:
+                user_input = input("You: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\nSession ended.")
+                break
+        if user_input.lower() in ("quit", "exit"):
+            break
+        if not user_input:
+            continue
+
+        thread_history = "\n".join(history_lines) if history_lines else None
+        response = ask(
+            user_input,
+            args.channel_id,
+            args.guild_id,
+            channel_name=args.channel_name,
+            author_username=args.author_username,
+            thread_history=thread_history,
+            is_mention=True,
+            tools=tools,
+        )
+        print(f"\nBot: {response}\n")
+
+        history_lines.append(f"User: {user_input}")
+        history_lines.append(f"Assistant: {response}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Test the sim racing bot locally.")
     parser.add_argument("question", help="Question to ask the bot")
@@ -245,6 +282,7 @@ def main():
     parser.add_argument("--author-username", default=None, help="Discord username of the asking user")
     parser.add_argument("--jev", action="store_true", help="Use Jev classifier instead of HuggingFace zero-shot")
     parser.add_argument("--refresh-gtdb", action="store_true", help="Force-refresh the GT7 car list cache before running")
+    parser.add_argument("--dm", action="store_true", help="Run an interactive multi-turn DM session (accumulates thread history between turns)")
     args = parser.parse_args()
 
     load_dotenv()
@@ -277,14 +315,21 @@ def main():
             mock_search_cars,
             get_tuning_recommendations,
         ]
-        response = ask(args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username, tools=mock_tools)
+        if args.dm:
+            _run_dm_session(args, tools=mock_tools)
+        else:
+            response = ask(args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username, tools=mock_tools)
+            print(response)
     else:
         if not os.environ.get("DISCORD_TOKEN"):
             print("Error: DISCORD_TOKEN not set. Copy .env.example to .env and fill it in, or use --mock.")
             raise SystemExit(1)
         print("Mode: LIVE (using real Discord API)\n")
-        response = ask(args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username)
-    print(response)
+        if args.dm:
+            _run_dm_session(args, tools=None)
+        else:
+            response = ask(args.question, args.channel_id, args.guild_id, channel_name=args.channel_name, author_username=args.author_username)
+            print(response)
 
 
 if __name__ == "__main__":

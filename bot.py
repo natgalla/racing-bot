@@ -50,10 +50,29 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    loop = asyncio.get_running_loop()
+
+    if message.guild is None:
+        # DM channel — skip classifier, category checks, and thread creation
+        question = message.content.strip()
+        if not question:
+            return
+        thread_history = await fetch_thread_history(message.channel, client.user.id)
+        logger.info("agent invoked dm=True")
+        response = await loop.run_in_executor(
+            None, functools.partial(ask, question, str(message.channel.id), None, None, thread_history, True, message.author.name, None)
+        )
+        if response.strip().upper() == "SKIP":
+            logger.info("response=SKIP dm=True")
+            return
+        response = response.strip() + " 🤖"
+        logger.info("response=sent dm=True length=%d", len(response))
+        await message.reply(response)
+        return
+
     is_mention = client.user in message.mentions
 
     _ch_name = message.channel.parent.name if isinstance(message.channel, discord.Thread) else message.channel.name
-    loop = asyncio.get_running_loop()
     score = None
 
     if not is_mention:
