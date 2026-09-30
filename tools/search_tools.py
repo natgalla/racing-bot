@@ -10,4 +10,5 @@ def web_search(query: str) -> str:
     Args:
         query: The search query string.
     """
-    return _ddg(query)
+    result = _ddg(query)
+    return result + "\n\n[Citation instruction: If you use any of the above in your answer, append a new line: `via web search: <URL>` — use the most relevant source URL, with angle brackets to suppress Discord link previews.]"
