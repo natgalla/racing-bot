@@ -139,4 +139,26 @@ async def on_message(message):
         await send(response)
 
 
+@client.event
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+    if payload.user_id == client.user.id:
+        return
+    channel = client.get_channel(payload.channel_id)
+    if channel is None:
+        return
+    try:
+        message = await channel.fetch_message(payload.message_id)
+    except discord.HTTPException:
+        return
+    if message.author.id != client.user.id:
+        return
+    logger.info(
+        "reaction emoji=%s message_id=%s channel=%s user_id=%s",
+        str(payload.emoji),
+        payload.message_id,
+        getattr(channel, "name", "dm"),
+        payload.user_id,
+    )
+
+
 client.run(os.environ["DISCORD_TOKEN"])
