@@ -41,14 +41,16 @@ async def _cleanup_on_start():
                         logger.info("startup cleanup: deleted empty thread id=%s", thread.id)
             except discord.HTTPException:
                 pass
-            for msg_id in _MESSAGES_TO_DELETE:
-                try:
-                    msg = await channel.fetch_message(msg_id)
-                    if msg.author.id == client.user.id:
-                        await msg.delete()
-                        logger.info("startup cleanup: deleted message id=%s", msg_id)
-                except (discord.NotFound, discord.HTTPException):
-                    pass
+            search_spaces = [channel] + list(channel.threads)
+            for space in search_spaces:
+                for msg_id in _MESSAGES_TO_DELETE:
+                    try:
+                        msg = await space.fetch_message(msg_id)
+                        if msg.author.id == client.user.id:
+                            await msg.delete()
+                            logger.info("startup cleanup: deleted message id=%s", msg_id)
+                    except (discord.NotFound, discord.HTTPException):
+                        pass
 
 
 @client.event
