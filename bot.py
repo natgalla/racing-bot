@@ -49,6 +49,9 @@ async def _cleanup_on_start():
                         if msg.author.id == client.user.id:
                             await msg.delete()
                             logger.info("startup cleanup: deleted message id=%s", msg_id)
+                            if isinstance(space, discord.Thread):
+                                await space.delete()
+                                logger.info("startup cleanup: deleted parent thread id=%s", space.id)
                     except (discord.NotFound, discord.HTTPException):
                         pass
 
