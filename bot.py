@@ -128,12 +128,17 @@ async def on_message(message):
     category_name = channel.category.name if channel.category else None
 
     if not is_mention:
-        try:
-            thread = await message.create_thread(name=question[:100])
-            send = thread.send
-        except discord.HTTPException:
-            send = message.reply
-            thread = None
+        _passive_thread = []
+
+        async def send(content):
+            if not _passive_thread:
+                try:
+                    _passive_thread.append(await message.create_thread(name=question[:100]))
+                except discord.HTTPException:
+                    _passive_thread.append(None)
+            t = _passive_thread[0]
+            return await (t.send(content) if t else message.reply(content))
+
         logger.info("agent invoked score=%.3f channel=%s", score, channel_name)
         try:
             response = await loop.run_in_executor(
