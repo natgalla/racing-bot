@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 gtdb_list_cache.json
 gtdb_detail_cache.json
+bot.log
+bot.log.*
