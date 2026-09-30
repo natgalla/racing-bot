@@ -25,9 +25,6 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 
-_MESSAGES_TO_DELETE = {1554992537935159510}
-
-
 async def _cleanup_on_start():
     cutoff = discord.utils.utcnow() - datetime.timedelta(hours=1)
     for guild in client.guilds:
@@ -41,19 +38,6 @@ async def _cleanup_on_start():
                         logger.info("startup cleanup: deleted empty thread id=%s", thread.id)
             except discord.HTTPException:
                 pass
-            search_spaces = [channel] + list(channel.threads)
-            for space in search_spaces:
-                for msg_id in _MESSAGES_TO_DELETE:
-                    try:
-                        msg = await space.fetch_message(msg_id)
-                        if msg.author.id == client.user.id:
-                            await msg.delete()
-                            logger.info("startup cleanup: deleted message id=%s", msg_id)
-                            if isinstance(space, discord.Thread):
-                                await space.delete()
-                                logger.info("startup cleanup: deleted parent thread id=%s", space.id)
-                    except (discord.NotFound, discord.HTTPException):
-                        pass
 
 
 @client.event
