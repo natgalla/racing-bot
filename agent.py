@@ -229,24 +229,18 @@ _FAILURE_FATES = [
     "took the full hit",
     "went everywhere",
     "never recovered",
-    "is a confirmed retirement",
-    "has been classified DNF",
 ]
 
 
 def complication_message() -> str:
-    """First-failure message — ends in 'Standby.'"""
     verb = random.choice(_MADLIB_VERBS)
     location = random.choice(_MADLIB_LOCATIONS)
     good = random.choice(_MADLIB_BAKED_GOODS)
     fate = random.choice(_COMPLICATION_FATES)
-    return f"🚨 I've {verb} {location} and the {good} {fate}. Standby."
+    return f"🟡 I've {verb} {location} and the {good} {fate}. Standby."
 
 
 def failure_message() -> str:
-    """Second-failure message — ends in 'Please try again later.'"""
-    verb = random.choice(_MADLIB_VERBS)
-    location = random.choice(_MADLIB_LOCATIONS)
     good = random.choice(_MADLIB_BAKED_GOODS)
     fate = random.choice(_FAILURE_FATES)
-    return f"🚨 I've {verb} {location} and the {good} {fate}. Please try again later."
+    return f"🔴 DNF — the {good} {fate}. Please try again later."
