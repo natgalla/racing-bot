@@ -175,19 +175,10 @@ def ask(question: str, channel_id: str, guild_id: str, category_name: str | None
         f"{history_section}"
         f"\nQuestion: <user_message>{question}</user_message>"
     )
-    try:
-        return agent.run(prompt)
-    except Exception as exc:
-        logger.error("agent.run failed: %s", exc, exc_info=True)
-        verb = random.choice(_ERROR_VERBS)
-        location = random.choice(_ERROR_LOCATIONS)
-        good = random.choice(_ERROR_BAKED_GOODS)
-        fate = random.choice(_ERROR_FATES)
-        coda = random.choice(_ERROR_CODAS)
-        return f"🚨 I've {verb} {location} and the {good} {fate}. {coda}"
+    return agent.run(prompt)
 
 
-_ERROR_VERBS = [
+_MADLIB_VERBS = [
     "binned it",
     "spun out",
     "locked up",
@@ -198,7 +189,7 @@ _ERROR_VERBS = [
     "suffered a mechanical",
 ]
 
-_ERROR_LOCATIONS = [
+_MADLIB_LOCATIONS = [
     "at Turn 1",
     "into the gravel trap",
     "into the hairpin",
@@ -209,7 +200,7 @@ _ERROR_LOCATIONS = [
     "on the formation lap",
 ]
 
-_ERROR_BAKED_GOODS = [
+_MADLIB_BAKED_GOODS = [
     "soufflé",
     "fondant",
     "sponge",
@@ -220,21 +211,42 @@ _ERROR_BAKED_GOODS = [
     "meringue",
 ]
 
-_ERROR_FATES = [
+_COMPLICATION_FATES = [
+    "is still in the gravel",
+    "needs a moment to recover",
+    "is being retrieved from the barriers",
+    "is back in the pits",
+    "is temporarily out of commission",
+    "is taking on fresh tyres",
+    "is under the safety car",
+    "is being assessed by the stewards",
+]
+
+_FAILURE_FATES = [
     "didn't survive the impact",
     "didn't make it",
     "collapsed on contact",
-    "is still in the gravel",
     "took the full hit",
     "went everywhere",
     "never recovered",
-    "is still settling",
+    "is a confirmed retirement",
+    "has been classified DNF",
 ]
 
-_ERROR_CODAS = [
-    "Try again in a moment.",
-    "Back shortly.",
-    "Stand by.",
-    "Hang tight.",
-    "Try again shortly.",
-]
+
+def complication_message() -> str:
+    """First-failure message — ends in 'Standby.'"""
+    verb = random.choice(_MADLIB_VERBS)
+    location = random.choice(_MADLIB_LOCATIONS)
+    good = random.choice(_MADLIB_BAKED_GOODS)
+    fate = random.choice(_COMPLICATION_FATES)
+    return f"🚨 I've {verb} {location} and the {good} {fate}. Standby."
+
+
+def failure_message() -> str:
+    """Second-failure message — ends in 'Please try again later.'"""
+    verb = random.choice(_MADLIB_VERBS)
+    location = random.choice(_MADLIB_LOCATIONS)
+    good = random.choice(_MADLIB_BAKED_GOODS)
+    fate = random.choice(_FAILURE_FATES)
+    return f"🚨 I've {verb} {location} and the {good} {fate}. Please try again later."

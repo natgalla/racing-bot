@@ -6,7 +6,7 @@ import os
 import re
 import discord
 from dotenv import load_dotenv
-from agent import ask
+from agent import ask, complication_message, failure_message
 from classifier_jev import classify_score, _THRESHOLD as _RELEVANCE_THRESHOLD
 
 _log_fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s", datefmt="%Y-%m-%dT%H:%M:%S")
@@ -45,6 +45,20 @@ async def fetch_thread_history(channel, bot_user_id, limit=10):
     return "\n".join(lines) if lines else None
 
 
+async def _retry_ask(send, question, channel_id, guild_id, category_name, thread_history, is_mention, author_username, channel_name):
+    await asyncio.sleep(240)
+    loop = asyncio.get_running_loop()
+    try:
+        response = await loop.run_in_executor(
+            None, functools.partial(ask, question, channel_id, guild_id, category_name, thread_history, is_mention, author_username, channel_name)
+        )
+        if response.strip().upper() != "SKIP":
+            await send(response.strip() + " 🤖")
+    except Exception as exc:
+        logger.error("retry failed: %s", exc, exc_info=True)
+        await send(failure_message())
+
+
 @client.event
 async def on_message(message):
     if message.author.bot:
@@ -59,9 +73,15 @@ async def on_message(message):
             return
         thread_history = await fetch_thread_history(message.channel, client.user.id)
         logger.info("agent invoked dm=True")
-        response = await loop.run_in_executor(
-            None, functools.partial(ask, question, str(message.channel.id), None, None, thread_history, True, message.author.name, None)
-        )
+        try:
+            response = await loop.run_in_executor(
+                None, functools.partial(ask, question, str(message.channel.id), None, None, thread_history, True, message.author.name, None)
+            )
+        except Exception as exc:
+            logger.error("agent invoked dm=True failed: %s", exc, exc_info=True)
+            await message.reply(complication_message())
+            asyncio.create_task(_retry_ask(message.reply, question, str(message.channel.id), None, None, thread_history, True, message.author.name, None))
+            return
         if response.strip().upper() == "SKIP":
             logger.info("response=SKIP dm=True")
             return
@@ -108,19 +128,27 @@ async def on_message(message):
     category_name = channel.category.name if channel.category else None
 
     if not is_mention:
+        try:
+            thread = await message.create_thread(name=question[:100])
+            send = thread.send
+        except discord.HTTPException:
+            send = message.reply
+            thread = None
         logger.info("agent invoked score=%.3f channel=%s", score, channel_name)
-        response = await loop.run_in_executor(
-            None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name)
-        )
+        try:
+            response = await loop.run_in_executor(
+                None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name)
+            )
+        except Exception as exc:
+            logger.error("agent invoked score=%.3f channel=%s failed: %s", score, channel_name, exc, exc_info=True)
+            await send(complication_message())
+            asyncio.create_task(_retry_ask(send, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name))
+            return
         if response.strip().upper() == "SKIP":
             logger.info("response=SKIP score=%.3f channel=%s", score, channel_name)
             return
         response = response.strip() + " 🤖"
-        try:
-            thread = await message.create_thread(name=question[:100])
-            sent = await thread.send(response)
-        except discord.HTTPException:
-            sent = await message.reply(response)
+        sent = await send(response)
         logger.info("response=sent score=%.3f message_id=%s channel=%s content=%s", score, sent.id, channel_name, response)
     else:
         try:
@@ -129,11 +157,17 @@ async def on_message(message):
         except discord.HTTPException:
             send = message.reply
             thread = None
-        async with (thread or message.channel).typing():
-            logger.info("agent invoked channel=%s", channel_name)
-            response = await loop.run_in_executor(
-                None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, True, message.author.name, channel_name)
-            )
+        try:
+            async with (thread or message.channel).typing():
+                logger.info("agent invoked channel=%s", channel_name)
+                response = await loop.run_in_executor(
+                    None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, True, message.author.name, channel_name)
+                )
+        except Exception as exc:
+            logger.error("agent invoked channel=%s failed: %s", channel_name, exc, exc_info=True)
+            await send(complication_message())
+            asyncio.create_task(_retry_ask(send, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, True, message.author.name, channel_name))
+            return
         response = response.strip() + " 🤖"
         sent = await send(response)
         logger.info("response=sent message_id=%s channel=%s content=%s", sent.id, channel_name, response)
