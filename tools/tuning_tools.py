@@ -43,6 +43,8 @@ RULES = [
     ("understeer", "mid", "bodyHeightFront", "decrease", "high", None, None, None),
     ("understeer", "mid", "bodyHeightRear", "increase", "high", None, None, None),
     ("understeer", "mid", "torqueDistribution", "decrease", None, None, None, None),
+    ("understeer", "mid", "lsdInitRear", "decrease", None, None, None, None),
+    ("understeer", "mid", "lsdInitFront", "decrease", None, None, None, "FF"),
 
     # ── Understeer, Exit ──
     ("understeer", "exit", "natFreqFront", "decrease", None, None, None, None),
@@ -51,7 +53,8 @@ RULES = [
     ("understeer", "exit", "antiRollFront", "decrease", None, "on-throttle", None, None),
     ("understeer", "exit", "antiRollRear", "increase", None, "on-throttle", None, None),
     ("understeer", "exit", "torqueDistribution", "decrease", None, "on-throttle", None, None),
-    ("understeer", "exit", "lsdAccelFront", "increase", None, "on-throttle", None, "FF"),
+    ("understeer", "exit", "lsdAccelFront", "decrease", None, "on-throttle", None, "FF"),
+    ("understeer", "exit", "expansionFront", "increase", None, None, None, None),
 
     # ── Understeer, Elevation ──
     ("understeer", "entry", "bodyHeightFront", "decrease", None, None, "up", None),
@@ -62,10 +65,11 @@ RULES = [
     ("oversteer", "entry", "antiRollFront", "increase", None, None, None, None),
     ("oversteer", "entry", "antiRollRear", "decrease", None, None, None, None),
     ("oversteer", "entry", "toeRear", "increase", None, None, None, None),
-    ("oversteer", "entry", "lsdDecelRear", "decrease", None, "braking", None, None),
+    ("oversteer", "entry", "lsdDecelRear", "increase", None, "braking", None, None),
     ("oversteer", "entry", "expansionRear", "increase", None, "braking", None, None),
     ("oversteer", "entry", "lsdDecelFront", "increase", None, "braking", None, "FF"),
     ("oversteer", "entry", "bodyHeightRear", "decrease", None, None, "down", None),
+    ("oversteer", "entry", "lsdInitRear", "increase", None, None, None, None),
 
     # ── Oversteer, Mid ──
     ("oversteer", "mid", "antiRollFront", "increase", None, None, None, None),
@@ -77,6 +81,8 @@ RULES = [
     ("oversteer", "mid", "bodyHeightRear", "decrease", "high", None, None, None),
     ("oversteer", "mid", "torqueDistribution", "increase", None, None, None, None),
     ("oversteer", "mid", "compressionFront", "increase", None, None, "down", None),
+    ("oversteer", "mid", "lsdInitRear", "increase", None, None, None, None),
+    ("oversteer", "mid", "lsdInitFront", "increase", None, None, None, "FF"),
 
     # ── Oversteer, Exit ──
     ("oversteer", "exit", "natFreqFront", "increase", None, None, None, None),
@@ -90,17 +96,20 @@ RULES = [
     ("oversteer", "exit", "lsdAccelFront", "decrease", None, "on-throttle", None, "FF"),
     ("oversteer", "exit", "lsdAccelRear", "increase", None, None, "up", None),
     ("oversteer", "exit", "expansionRear", "increase", None, None, "down", None),
+    ("oversteer", "exit", "expansionFront", "decrease", None, None, None, None),
 
     # ── Snap Oversteer, Entry ──
     ("snap-oversteer", "entry", "expansionRear", "increase", None, None, None, None),
     ("snap-oversteer", "entry", "compressionFront", "decrease", None, None, None, None),
     ("snap-oversteer", "entry", "toeRear", "increase", None, None, None, None),
-    ("snap-oversteer", "entry", "lsdDecelRear", "decrease", None, "braking", None, None),
-    ("snap-oversteer", "entry", "lsdDecelRear", "decrease", None, "off-throttle", None, None),
+    ("snap-oversteer", "entry", "lsdDecelRear", "increase", None, "braking", None, None),
+    ("snap-oversteer", "entry", "lsdDecelRear", "increase", None, "off-throttle", None, None),
     ("snap-oversteer", "entry", "compressionFront", "decrease", None, None, "down", None),
     ("snap-oversteer", "entry", "compressionRear", "increase", None, None, None, "MR"),
     ("snap-oversteer", "entry", "lsdDecelFront", "increase", None, "off-throttle", None, "FF"),
     ("snap-oversteer", "entry", "lsdDecelFront", "increase", None, "braking", None, "FF"),
+    ("snap-oversteer", "entry", "lsdInitRear", "increase", None, None, None, None),
+    ("snap-oversteer", "entry", "compressionRear", "increase", None, None, None, "RR"),
 
     # ── Snap Oversteer, Mid ──
     ("snap-oversteer", "mid", "expansionRear", "increase", None, None, None, None),
@@ -116,12 +125,14 @@ RULES = [
     ("snap-oversteer", "exit", "toeRear", "increase", None, None, None, None),
     ("snap-oversteer", "exit", "lsdAccelRear", "decrease", None, "on-throttle", None, None),
     ("snap-oversteer", "exit", "torqueDistribution", "increase", None, "on-throttle", None, None),
+    ("snap-oversteer", "exit", "lsdAccelRear", "decrease", None, "on-throttle", None, "RR"),
 
     # ── Instability, Entry ──
     ("instability", "entry", "toeRear", "increase", None, None, None, None),
     ("instability", "entry", "compressionRear", "increase", None, None, None, None),
     ("instability", "entry", "lsdDecelRear", "increase", None, "braking", None, None),
     ("instability", "entry", "expansionRear", "increase", None, None, "down", None),
+    ("instability", "entry", "lsdInitRear", "increase", None, None, None, None),
 
     # ── Instability, Mid ──
     ("instability", "mid", "toeRear", "increase", None, None, None, None),
@@ -138,6 +149,7 @@ RULES = [
     ("instability", "exit", "lsdAccelRear", "increase", None, "on-throttle", None, None),
     ("instability", "exit", "lsdAccelFront", "increase", None, "on-throttle", None, "FF"),
     ("instability", "exit", "torqueDistribution", "increase", None, "on-throttle", None, None),
+    ("instability", "exit", "lsdInitRear", "increase", None, None, None, None),
 ]
 
 
