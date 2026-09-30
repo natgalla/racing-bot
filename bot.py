@@ -144,8 +144,6 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     if payload.user_id == client.user.id:
         return
     channel = client.get_channel(payload.channel_id)
-    if isinstance(channel, discord.DMChannel):
-        return
     if channel is None:
         return
     try:
