@@ -66,8 +66,8 @@ async def on_message(message):
             logger.info("response=SKIP dm=True")
             return
         response = response.strip() + " 🤖"
-        logger.info("response=sent dm=True length=%d", len(response))
-        await message.reply(response)
+        sent = await message.reply(response)
+        logger.info("response=sent dm=True message_id=%s content=%s", sent.id, response)
         return
 
     is_mention = client.user in message.mentions
@@ -116,12 +116,12 @@ async def on_message(message):
             logger.info("response=SKIP score=%.3f channel=%s", score, channel_name)
             return
         response = response.strip() + " 🤖"
-        logger.info("response=sent score=%.3f length=%d channel=%s", score, len(response), channel_name)
         try:
             thread = await message.create_thread(name=question[:100])
-            await thread.send(response)
+            sent = await thread.send(response)
         except discord.HTTPException:
-            await message.reply(response)
+            sent = await message.reply(response)
+        logger.info("response=sent score=%.3f message_id=%s channel=%s content=%s", score, sent.id, channel_name, response)
     else:
         try:
             thread = await message.create_thread(name=question[:100])
@@ -135,8 +135,8 @@ async def on_message(message):
                 None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, True, message.author.name, channel_name)
             )
         response = response.strip() + " 🤖"
-        logger.info("response=sent length=%d channel=%s", len(response), channel_name)
-        await send(response)
+        sent = await send(response)
+        logger.info("response=sent message_id=%s channel=%s content=%s", sent.id, channel_name, response)
 
 
 @client.event
