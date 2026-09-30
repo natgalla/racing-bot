@@ -47,6 +47,8 @@ Call get_guild_events first. Use get_channel_pins or get_recent_messages only to
 
 When reporting event times, reproduce the <t:UNIX:F> timestamp tags exactly as returned — do not paraphrase or convert them to plain text. Discord renders these tags in each user's local timezone.
 
+Only report event details that appear verbatim in the tool output — event name, series, track, time, and any lobby details must come directly from get_guild_events or get_channel_pins. Never invent or infer these details. If get_guild_events returns no upcoming events, say so explicitly and stop.
+
 ## GT7 car data
 For GT7 car specs, PP, drivetrain, weight, power, group class, or acquisition questions, prefer get_car_specs and search_cars over web_search — they query a local GT7 car database and are faster and more reliable. Only fall back to web_search for GT7 data that those tools cannot answer.
 
