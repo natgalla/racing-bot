@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import random
 import unicodedata
 from smolagents import ToolCallingAgent, InferenceClientModel
 from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events, read_image_content
@@ -178,4 +179,62 @@ def ask(question: str, channel_id: str, guild_id: str, category_name: str | None
         return agent.run(prompt)
     except Exception as exc:
         logger.error("agent.run failed: %s", exc, exc_info=True)
-        return "I'm having trouble reaching my reasoning engine right now. Please try again in a moment."
+        verb = random.choice(_ERROR_VERBS)
+        location = random.choice(_ERROR_LOCATIONS)
+        good = random.choice(_ERROR_BAKED_GOODS)
+        fate = random.choice(_ERROR_FATES)
+        coda = random.choice(_ERROR_CODAS)
+        return f"🚨 I've {verb} {location} and the {good} {fate}. {coda}"
+
+
+_ERROR_VERBS = [
+    "binned it",
+    "spun out",
+    "locked up",
+    "aquaplaned",
+    "stalled",
+    "gone off",
+    "collected the barrier",
+    "suffered a mechanical",
+]
+
+_ERROR_LOCATIONS = [
+    "at Turn 1",
+    "into the gravel trap",
+    "into the hairpin",
+    "at the chicane",
+    "on the back straight",
+    "at the exit of the final corner",
+    "mid-corner",
+    "on the formation lap",
+]
+
+_ERROR_BAKED_GOODS = [
+    "soufflé",
+    "fondant",
+    "sponge",
+    "choux pastry",
+    "icing",
+    "batter",
+    "ganache",
+    "meringue",
+]
+
+_ERROR_FATES = [
+    "didn't survive the impact",
+    "didn't make it",
+    "collapsed on contact",
+    "is still in the gravel",
+    "took the full hit",
+    "went everywhere",
+    "never recovered",
+    "is still settling",
+]
+
+_ERROR_CODAS = [
+    "Try again in a moment.",
+    "Back shortly.",
+    "Stand by.",
+    "Hang tight.",
+    "Try again shortly.",
+]
