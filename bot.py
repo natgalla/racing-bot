@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import functools
 import logging
 import logging.handlers
@@ -24,9 +25,36 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 
+_MESSAGES_TO_DELETE = {1554992537935159510}
+
+
+async def _cleanup_on_start():
+    cutoff = discord.utils.utcnow() - datetime.timedelta(hours=1)
+    for guild in client.guilds:
+        for channel in guild.text_channels:
+            try:
+                for thread in channel.threads:
+                    if (thread.owner_id == client.user.id
+                            and thread.created_at >= cutoff
+                            and thread.message_count == 0):
+                        await thread.delete()
+                        logger.info("startup cleanup: deleted empty thread id=%s", thread.id)
+            except discord.HTTPException:
+                pass
+            for msg_id in _MESSAGES_TO_DELETE:
+                try:
+                    msg = await channel.fetch_message(msg_id)
+                    if msg.author.id == client.user.id:
+                        await msg.delete()
+                        logger.info("startup cleanup: deleted message id=%s", msg_id)
+                except (discord.NotFound, discord.HTTPException):
+                    pass
+
+
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
+    await _cleanup_on_start()
 
 
 async def fetch_thread_history(channel, bot_user_id, limit=10):
