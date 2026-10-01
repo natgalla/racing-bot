@@ -63,7 +63,7 @@ def warm(channel_id: str) -> None:
         logger.info("warming %s", url)
         try:
             response = client.chat.completions.create(
-                model="Qwen/Qwen2-VL-7B-Instruct",
+                model="Qwen/Qwen2.5-VL-7B-Instruct",
                 messages=[
                     {
                         "role": "user",

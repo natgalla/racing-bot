@@ -90,7 +90,7 @@ def read_image_content(image_url: str) -> str:
     try:
         client = InferenceClient(token=os.environ.get("HF_TOKEN"))
         response = client.chat.completions.create(
-            model="Qwen/Qwen2-VL-7B-Instruct",
+            model="Qwen/Qwen2.5-VL-7B-Instruct",
             messages=[
                 {
                     "role": "user",
