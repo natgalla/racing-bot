@@ -31,10 +31,10 @@ def _is_image(att: dict) -> bool:
     return any(url_path.endswith(ext) for ext in _IMAGE_EXTENSIONS)
 
 
-def fetch_pin_image_urls(channel_id: str) -> list[str]:
+def fetch_pin_image_urls(channel_id: str, max_pins: int = 5) -> list[str]:
     resp = requests.get(f"{DISCORD_API}/channels/{channel_id}/pins", headers=_headers(), timeout=15)
     resp.raise_for_status()
-    pins = resp.json()
+    pins = resp.json()[:max_pins]
     urls = []
     for pin in pins:
         for att in pin.get("attachments", []):
@@ -47,8 +47,8 @@ def warm(channel_id: str) -> None:
     from tools.image_cache import get_cached, set_cached
     from huggingface_hub import InferenceClient
 
-    logger.info("fetching pins from channel %s", channel_id)
-    urls = fetch_pin_image_urls(channel_id)
+    logger.info("fetching pins from channel %s (max 5)", channel_id)
+    urls = fetch_pin_image_urls(channel_id, max_pins=5)
     if not urls:
         logger.info("no image attachments found in pins")
         return
