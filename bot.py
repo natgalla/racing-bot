@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 OWNER_ID = int(os.environ.get("OWNER_ID", 0))
+HANDICAP_CHANNEL_ID = os.environ.get("HANDICAP_CHANNEL_ID", "")
 _pending_approvals: dict[int, dict] = {}
 
 intents = discord.Intents.default()
@@ -92,15 +93,16 @@ async def on_message(message):
         if not question:
             return
         thread_history = await fetch_thread_history(message.channel, client.user.id)
+        dm_channel_id = HANDICAP_CHANNEL_ID or str(message.channel.id)
         logger.info("agent invoked dm=True")
         try:
             response = await loop.run_in_executor(
-                None, functools.partial(ask, question, str(message.channel.id), None, None, thread_history, True, message.author.name, None)
+                None, functools.partial(ask, question, dm_channel_id, None, None, thread_history, True, message.author.name, None, None, True)
             )
         except Exception as exc:
             logger.error("agent invoked dm=True failed: %s", exc, exc_info=True)
             await message.reply(complication_message())
-            asyncio.create_task(_retry_ask(message.reply, question, str(message.channel.id), None, None, thread_history, True, message.author.name, None))
+            asyncio.create_task(_retry_ask(message.reply, question, dm_channel_id, None, None, thread_history, True, message.author.name, None))
             return
         if response.strip().upper() == "SKIP":
             logger.info("response=SKIP dm=True")

@@ -132,6 +132,7 @@ HANDICAP_INSTRUCTIONS = """## Answering handicap questions
 HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, read_image_content, calculate_handicap_settings, get_sources]
 GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, get_car_specs, search_cars, get_tuning_recommendations, get_sources]
 PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, read_image_content, get_car_specs, search_cars, get_tuning_recommendations, get_sources]
+DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, read_image_content, get_car_specs, search_cars, get_tuning_recommendations, calculate_handicap_settings, get_sources]
 
 
 def build_agent(tools=None):
@@ -152,7 +153,7 @@ def _glossary_for_category(category_name: str | None) -> str:
     return ""
 
 
-def ask(question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None, tools: list | None = None) -> str:
+def ask(question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None, tools: list | None = None, is_dm: bool = False) -> str:
     today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
     date_line = f"Today's date: {today}\n"
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
@@ -160,11 +161,13 @@ def ask(question: str, channel_id: str, guild_id: str, category_name: str | None
     history_section = f"\nConversation so far:\n<user_message>{thread_history}</user_message>\n" if thread_history else ""
     passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
     author_line = f"Asking user's Discord username: {author_username}\n" if author_username else ""
-    is_handicap_channel = unicodedata.normalize("NFC", channel_name or "") == HANDICAP_CHANNEL
+    is_handicap_channel = is_dm or unicodedata.normalize("NFC", channel_name or "") == HANDICAP_CHANNEL
     if tools is not None:
         agent = build_agent(tools=tools)
     else:
-        if is_handicap_channel:
+        if is_dm:
+            agent = build_agent(tools=DM_TOOLS)
+        elif is_handicap_channel:
             agent = build_agent(tools=HANDICAP_TOOLS)
         elif not is_mention:
             agent = build_agent(tools=PASSIVE_TOOLS)
