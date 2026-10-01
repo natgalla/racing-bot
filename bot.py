@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+OWNER_ID = int(os.environ.get("OWNER_ID", 0))
+_pending_approvals: dict[int, dict] = {}
+
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
@@ -170,8 +173,22 @@ async def on_message(message):
             logger.info("response=SKIP score=%.3f channel=%s", score, channel_name)
             return
         response = response.strip() + " 🤖"
-        sent = await send(response)
-        logger.info("response=sent score=%.3f message_id=%s channel=%s content=%s", score, sent.id, channel_name, response)
+        if OWNER_ID:
+            try:
+                owner = await client.fetch_user(OWNER_ID)
+                dm_content = f"**Passive response pending** — #{channel_name}\n> {question[:200]}\n\n{response}"
+                dm_msg = await owner.send(dm_content)
+                await dm_msg.add_reaction("✅")
+                await dm_msg.add_reaction("❌")
+                _pending_approvals[dm_msg.id] = {"message": message, "response": response}
+                logger.info("response=pending_approval score=%.3f channel=%s", score, channel_name)
+            except discord.HTTPException as exc:
+                logger.error("approval DM failed, posting directly: %s", exc)
+                sent = await send(response)
+                logger.info("response=sent score=%.3f message_id=%s channel=%s content=%s", score, sent.id, channel_name, response)
+        else:
+            sent = await send(response)
+            logger.info("response=sent score=%.3f message_id=%s channel=%s content=%s", score, sent.id, channel_name, response)
     else:
         try:
             thread = await message.create_thread(name=question[:100])
@@ -199,6 +216,26 @@ async def on_message(message):
 async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     if payload.user_id == client.user.id:
         return
+
+    if OWNER_ID and payload.user_id == OWNER_ID and payload.message_id in _pending_approvals:
+        entry = _pending_approvals.pop(payload.message_id)
+        orig_message = entry["message"]
+        response = entry["response"]
+        if str(payload.emoji) == "✅":
+            try:
+                thread = await orig_message.create_thread(name=orig_message.content[:100])
+                sent = await thread.send(response)
+            except discord.HTTPException:
+                try:
+                    sent = await orig_message.reply(response)
+                except discord.HTTPException as exc:
+                    logger.error("approval post failed: %s", exc)
+                    return
+            logger.info("approval=accepted message_id=%s channel=%s", sent.id, getattr(orig_message.channel, "name", "unknown"))
+        else:
+            logger.info("approval=rejected channel=%s", getattr(orig_message.channel, "name", "unknown"))
+        return
+
     channel = client.get_channel(payload.channel_id)
     if channel is None:
         return
