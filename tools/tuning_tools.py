@@ -270,12 +270,26 @@ def get_tuning_recommendations(
     if not results:
         return "No specific recommendations found for that combination. Try broadening the inputs (remove phase, throttle, or elevation)."
 
-    lines = []
-    for param, (direction, score) in results:
+    scores = [score for _, (_, score) in results]
+    all_same_score = len(set(scores)) == 1
+
+    def fmt(param, direction):
         label = PARAM_LABELS.get(param, param)
         arrow = "▲ Increase" if direction == "increase" else "▼ Decrease"
-        specificity = f" (matched {score} condition{'s' if score != 1 else ''})" if score > 0 else ""
-        lines.append(f"{arrow} {label}{specificity}")
+        return f"{arrow} {label}"
+
+    if all_same_score:
+        lines = [fmt(param, direction) for param, (direction, _) in results]
+    else:
+        high = [fmt(p, d) for p, (d, s) in results if s >= 1]
+        also = [fmt(p, d) for p, (d, s) in results if s == 0]
+        lines = []
+        if high:
+            lines.append("High impact:")
+            lines.extend(f"  {l}" for l in high)
+        if also:
+            lines.append("Also try:")
+            lines.extend(f"  {l}" for l in also)
 
     context_parts = [f"symptom={symptom}", f"drivetrain={drivetrain}"]
     if phase:
