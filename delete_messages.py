@@ -13,7 +13,7 @@ load_dotenv()
 
 MESSAGES_TO_DELETE = {
     # 1554992537935159510,  # hallucinated Thunderhill event — already deleted 2026-09-30
-    1555022130876391486,  # failed to find standings/detune — content_type bug, fixed 2026-09-30
+    # 1555022130876391486,  # failed to find standings/detune — content_type bug, fixed 2026-09-30
 }
 
 intents = discord.Intents.default()
