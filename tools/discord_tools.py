@@ -14,11 +14,21 @@ def _headers():
     return {"Authorization": f"Bot {os.environ['DISCORD_TOKEN']}"}
 
 
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+
+
+def _is_image(att: dict) -> bool:
+    if (att.get("content_type") or "").startswith("image/"):
+        return True
+    url_path = (att.get("url") or "").split("?")[0].lower()
+    return any(url_path.endswith(ext) for ext in _IMAGE_EXTENSIONS)
+
+
 def _image_lines(obj: dict) -> list[str]:
     return [
         f"[Image attachment: {att['url']}]"
         for att in obj.get("attachments", [])
-        if (att.get("content_type") or "").startswith("image/")
+        if _is_image(att)
     ]
 
 
