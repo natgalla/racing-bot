@@ -180,7 +180,7 @@ def mock_get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
 
 
 @tool
-def mock_read_image_content(image_url: str) -> str:
+def mock_get_image_text(image_url: str) -> str:
     """Extract text and table data from an image URL. Use this when get_channel_pins returns [Image attachment: <url>] lines — call it to read handicap tables or other image-based content from pinned messages.
 
     Args:
@@ -309,7 +309,7 @@ def main():
             mock_get_recent_messages,
             mock_get_guild_events,
             web_search,
-            mock_read_image_content,
+            mock_get_image_text,
             calculate_handicap_settings,
             mock_get_car_specs,
             mock_search_cars,

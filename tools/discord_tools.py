@@ -73,7 +73,7 @@ def get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
 
 
 @tool
-def read_image_content(image_url: str) -> str:
+def get_image_text(image_url: str) -> str:
     """Extract text and table data from an image URL. Use this when get_channel_pins returns [Image attachment: <url>] lines — call it to read handicap tables or other image-based content from pinned messages.
 
     Args:
@@ -85,7 +85,7 @@ def read_image_content(image_url: str) -> str:
     try:
         from huggingface_hub import InferenceClient
     except ImportError as exc:
-        logger.error("read_image_content: huggingface_hub not available: %s", exc)
+        logger.error("get_image_text: huggingface_hub not available: %s", exc)
         return "Image reading is unavailable — huggingface_hub package not installed."
     try:
         client = InferenceClient(token=os.environ.get("HF_TOKEN"))
@@ -110,7 +110,7 @@ def read_image_content(image_url: str) -> str:
             set_cached(image_url, result)
         return result
     except Exception as exc:
-        logger.exception("read_image_content failed")
+        logger.exception("get_image_text failed")
         return f"Failed to read image content: {exc}"
 
 

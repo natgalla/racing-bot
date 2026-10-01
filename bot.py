@@ -50,11 +50,14 @@ async def on_ready():
     await _cleanup_on_start()
 
 
-async def fetch_thread_history(channel, bot_user_id, limit=10):
+async def fetch_thread_history(channel, bot_user_id, limit=10, max_age=None):
     messages = []
     async for m in channel.history(limit=limit + 1, oldest_first=False):
         messages.append(m)
     prior = list(reversed(messages[1:]))
+    if max_age is not None:
+        cutoff = discord.utils.utcnow() - max_age
+        prior = [m for m in prior if m.created_at >= cutoff]
     if not prior:
         return None
     lines = []
@@ -92,7 +95,7 @@ async def on_message(message):
         question = message.content.strip()
         if not question:
             return
-        thread_history = await fetch_thread_history(message.channel, client.user.id)
+        thread_history = await fetch_thread_history(message.channel, client.user.id, limit=8, max_age=datetime.timedelta(hours=1))
         dm_channel_id = HANDICAP_CHANNEL_ID or str(message.channel.id)
         logger.info("agent invoked dm=True")
         try:

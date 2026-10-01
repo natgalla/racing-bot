@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pre-warm image_cache.json by fetching all image attachments from handicap channel pins.
 
-Run via cron before race nights so read_image_content returns instantly during agent runs:
+Run via cron before race nights so get_image_text returns instantly during agent runs:
 
     0 17 * * 3 cd /home/pi/racing-bot && python3 warm_cache.py >> /home/pi/warm_cache.log 2>&1
 """
