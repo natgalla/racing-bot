@@ -171,8 +171,6 @@ async def on_message(message):
             )
         except Exception as exc:
             logger.error("agent invoked score=%.3f channel=%s failed: %s", score, channel_name, exc, exc_info=True)
-            await send(complication_message())
-            asyncio.create_task(_retry_ask(send, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name))
             return
         if response.strip().upper() == "SKIP":
             logger.info("response=SKIP score=%.3f channel=%s", score, channel_name)
