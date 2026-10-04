@@ -117,7 +117,9 @@ async def on_message(message):
         logger.info("response=sent dm=True message_id=%s content=%s", sent.id, response)
         return
 
-    is_mention = client.user in message.mentions
+    is_mention = client.user in message.mentions or (
+        client.user is not None and f"<@{client.user.id}>" in message.content
+    )
 
     _ch_name = message.channel.parent.name if isinstance(message.channel, discord.Thread) else message.channel.name
     score = None
