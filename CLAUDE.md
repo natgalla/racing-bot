@@ -55,7 +55,7 @@ User messages are intentionally not logged (privacy).
 ```
 Discord message
   → bot.py (event handler)
-    → classifier_jev.py (local HuggingFace model, threshold 0.75)
+    → classifier_jev.py (Jev/TypeSafe classifier, threshold 0.50)
       → agent.py (Qwen 72B via HuggingFace InferenceClient)
         → tools/* (Discord API, GT7 DB, web search, handicap calc)
           → threaded Discord reply (or SKIP)
@@ -67,7 +67,7 @@ Discord message
 |---|---|
 | `bot.py` | Discord client, message routing, thread posting |
 | `agent.py` | ToolCallingAgent config, system prompt, SKIP gate logic |
-| `classifier_jev.py` | Zero-shot classifier; returns float confidence score |
+| `classifier_jev.py` | Jev/TypeSafe classifier; returns float confidence score (threshold 0.50, overridable via `RELEVANCE_THRESHOLD` env var) |
 | `tools/discord_tools.py` | Pins, recent messages, guild events, user profiles |
 | `tools/gtdb_tools.py` | GT7 car spec lookup and fuzzy search via gtdb.io scraping |
 | `tools/gtdb_cache.py` | File-backed cache with 30-day TTL for GT7 car list and detail pages |
