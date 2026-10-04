@@ -9,7 +9,7 @@ A Discord bot for sim racing communities. It passively monitors channels and ans
 ## Running and Testing
 
 ```bash
-# Start the bot (requires .env with DISCORD_TOKEN, HF_TOKEN, ANTHROPIC_API_KEY)
+# Start the bot (requires .env with DISCORD_TOKEN, HF_TOKEN, TYPESAFE_API_KEY)
 python bot.py
 
 # Run agent against a mock question (no Discord token needed)
@@ -92,6 +92,6 @@ Both `gtdb_cache.py` and `image_cache.py` write JSON to local files. Cache files
 
 ## Environment
 
-Copy `.env.example` to `.env`. Required vars: `DISCORD_TOKEN`, `HF_TOKEN`. Optional: `ANTHROPIC_API_KEY` (used by image cache vision calls).
+Copy `.env.example` to `.env`. Required vars: `DISCORD_TOKEN`, `HF_TOKEN`, `TYPESAFE_API_KEY`.
 
 The bot listens only in channels under the "Gran Turismo 7" Discord category unless the channel name matches a configured override.

@@ -3,32 +3,21 @@ import os
 import requests
 from datetime import datetime
 from smolagents import tool
-from .image_cache import get_cached, set_cached
+from .attachments import DISCORD_API, _bot_auth_headers, is_image
+from .image_cache import extract_and_cache
 
 logger = logging.getLogger(__name__)
 
-DISCORD_API = "https://discord.com/api/v10"
-
-
-def _headers():
-    return {"Authorization": f"Bot {os.environ['DISCORD_TOKEN']}"}
-
-
-_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
-
-
-def _is_image(att: dict) -> bool:
-    if (att.get("content_type") or "").startswith("image/"):
-        return True
-    url_path = (att.get("url") or "").split("?")[0].lower()
-    return any(url_path.endswith(ext) for ext in _IMAGE_EXTENSIONS)
+# All requests.get calls in this module are synchronous and blocking. They must always be
+# dispatched via run_in_executor — they share the thread pool with the classifier and image
+# extraction, so slow Discord API responses can reduce effective semaphore throughput.
 
 
 def _image_lines(obj: dict) -> list[str]:
     return [
         f"[Image attachment: {att['url']}]"
         for att in obj.get("attachments", [])
-        if _is_image(att)
+        if is_image(att)
     ]
 
 
@@ -45,7 +34,7 @@ def get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
         channel_id: The Discord channel ID to fetch pins from.
         max_pins: Maximum number of pins to return (default 5, newest first).
     """
-    resp = requests.get(f"{DISCORD_API}/channels/{channel_id}/pins", headers=_headers())
+    resp = requests.get(f"{DISCORD_API}/channels/{channel_id}/pins", headers=_bot_auth_headers(), timeout=20)
     if resp.status_code != 200:
         logger.error("get_channel_pins failed: %s %s", resp.status_code, resp.text)
         raise RuntimeError(f"Error fetching pins: {resp.status_code} {resp.text}")
@@ -55,11 +44,19 @@ def get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
         return "No pinned messages found in this channel."
     sections = []
     for p in pins:
+        has_pinned_at = bool(p.get("pinned_at"))
         raw_date = p.get("pinned_at") or p.get("timestamp", "")
         try:
             pin_date = datetime.fromisoformat(raw_date.replace("Z", "+00:00")).strftime("%Y-%m-%d")
         except (ValueError, AttributeError):
             pin_date = "unknown"
+        if not has_pinned_at:
+            # Discord occasionally omits pinned_at; the date then reflects the message's
+            # creation time, not when it was pinned — flag it so the agent treats it as uncertain.
+            logger.warning("get_channel_pins: pinned_at missing for pin, using message timestamp (approx date %s)", pin_date)
+            pin_header = f"[Pinned (approx): {pin_date}]"
+        else:
+            pin_header = f"[Pinned: {pin_date}]"
         content = p.get("content", "")
         image_lines = _image_lines(p)
         parts = [content] if content else []
@@ -68,7 +65,7 @@ def get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
             parts = ["[Spec handicap package: detunes + up-tunes]"] + parts
         parts += image_lines
         body = "\n".join(filter(None, parts))
-        sections.append(f"[Pinned: {pin_date}]\n{body}")
+        sections.append(f"{pin_header}\n{body}")
     return "\n\n---\n\n".join(sections)
 
 
@@ -79,9 +76,6 @@ def get_image_text(image_url: str) -> str:
     Args:
         image_url: The URL of the image to extract text from.
     """
-    cached = get_cached(image_url)
-    if cached is not None:
-        return cached
     try:
         from huggingface_hub import InferenceClient
     except ImportError as exc:
@@ -89,26 +83,7 @@ def get_image_text(image_url: str) -> str:
         return "Image reading is unavailable — huggingface_hub package not installed."
     try:
         client = InferenceClient(token=os.environ.get("HF_TOKEN"))
-        response = client.chat.completions.create(
-            model="google/gemma-3-27b-it",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image_url", "image_url": {"url": image_url}},
-                        {
-                            "type": "text",
-                            "text": "Extract all text and table data from this image exactly as shown. Preserve table structure as a text table. Do not summarise or interpret — transcribe verbatim.",
-                        },
-                    ],
-                }
-            ],
-            max_tokens=1500,
-        )
-        result = response.choices[0].message.content or ""
-        if result:
-            set_cached(image_url, result)
-        return result
+        return extract_and_cache(client, image_url)
     except Exception as exc:
         logger.exception("get_image_text failed")
         return f"Failed to read image content: {exc}"
@@ -133,10 +108,12 @@ def get_recent_messages(channel_id: str, limit: int = 20, after_date: str = "") 
             are included). Use the [Pinned: YYYY-MM-DD] date from get_channel_pins so that
             pre-event chatter from prior sessions does not pollute the context.
     """
+    limit = min(max(limit, 1), 100)
     resp = requests.get(
         f"{DISCORD_API}/channels/{channel_id}/messages",
-        headers=_headers(),
+        headers=_bot_auth_headers(),
         params={"limit": limit},
+        timeout=20,
     )
     if resp.status_code != 200:
         logger.error("get_recent_messages failed: %s %s", resp.status_code, resp.text)
@@ -178,8 +155,11 @@ def get_guild_events(guild_id: str, series_name: str = "") -> str:
         guild_id: The Discord guild (server) ID to fetch events from.
         series_name: Optional case-insensitive substring to filter events by name. Pass the series name from the pinned spec without date qualifiers (e.g. 'Friday Night Lights' not 'Friday Night Lights SEP/4th').
     """
+    if not guild_id:
+        logger.info("get_guild_events: no guild_id provided, returning no events")
+        return "No scheduled events found for this server."
     resp = requests.get(
-        f"{DISCORD_API}/guilds/{guild_id}/scheduled-events", headers=_headers()
+        f"{DISCORD_API}/guilds/{guild_id}/scheduled-events", headers=_bot_auth_headers(), timeout=20
     )
     if resp.status_code != 200:
         logger.error("get_guild_events failed: %s %s", resp.status_code, resp.text)

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 
 from rapidfuzz import fuzz, process
 from smolagents import tool
@@ -55,7 +56,6 @@ def _format_detail(detail: dict) -> str:
 
 def _parse_power_bhp(power_str: str) -> int | None:
     """Extract the BHP figure from a power string like '203 BHP / 6000 rpm'."""
-    import re
     m = re.search(r"(\d+)\s*BHP", power_str, re.IGNORECASE)
     if m:
         return int(m.group(1))

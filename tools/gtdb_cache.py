@@ -2,12 +2,13 @@ import json
 import logging
 import os
 import re
-import tempfile
 import threading
 from datetime import datetime, timezone, timedelta
 
 import requests
 from bs4 import BeautifulSoup
+
+from .file_utils import atomic_write_json
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,7 @@ _DETAIL_CACHE_PATH = os.path.join(_REPO_ROOT, "gtdb_detail_cache.json")
 _LIST_LOCK = threading.Lock()
 _DETAIL_LOCK = threading.Lock()
 
-_LIST_TTL_DAYS = 30
-_DETAIL_TTL_DAYS = 30
+_CACHE_TTL_DAYS = 30
 
 _USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -34,31 +34,17 @@ def _load_json(path: str) -> dict:
     if os.path.exists(path):
         try:
             with open(path) as f:
-                return json.load(f)
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return {}
+            return data
         except Exception:
             logger.exception("gtdb_cache: failed to load %s", path)
     return {}
 
 
 def _save_json(path: str, data: dict) -> None:
-    # Write to a temp file in the same directory then atomically replace, so a
-    # concurrent read never sees a truncated or partial JSON payload.
-    tmp_path = None
-    try:
-        cache_dir = os.path.dirname(path)
-        with tempfile.NamedTemporaryFile(
-            mode="w", dir=cache_dir, delete=False, suffix=".tmp"
-        ) as tmp:
-            tmp_path = tmp.name
-            json.dump(data, tmp, indent=2)
-        os.replace(tmp_path, path)
-    except Exception:
-        logger.exception("gtdb_cache: failed to save %s", path)
-        if tmp_path and os.path.exists(tmp_path):
-            try:
-                os.unlink(tmp_path)
-            except OSError as exc:
-                logger.debug("gtdb_cache: failed to unlink temp file: %s", exc)
+    atomic_write_json(path, data)
 
 
 def _is_list_cache_fresh(data: dict) -> bool:
@@ -67,7 +53,7 @@ def _is_list_cache_fresh(data: dict) -> bool:
         return False
     try:
         ts = datetime.fromisoformat(fetched_at.replace("Z", "+00:00"))
-        return datetime.now(timezone.utc) - ts < timedelta(days=_LIST_TTL_DAYS)
+        return datetime.now(timezone.utc) - ts < timedelta(days=_CACHE_TTL_DAYS)
     except (ValueError, TypeError):
         return False
 
@@ -78,7 +64,7 @@ def _is_detail_entry_fresh(entry: dict) -> bool:
         return False
     try:
         ts = datetime.fromisoformat(fetched_at.replace("Z", "+00:00"))
-        return datetime.now(timezone.utc) - ts < timedelta(days=_DETAIL_TTL_DAYS)
+        return datetime.now(timezone.utc) - ts < timedelta(days=_CACHE_TTL_DAYS)
     except (ValueError, TypeError):
         return False
 
@@ -215,9 +201,9 @@ def _scrape_detail(slug: str) -> dict:
             elif "torque" in label:
                 entry["torque"] = value
             elif "weight" in label:
-                weight_str = re.sub(r"[^0-9]", "", value.split("k")[0] if "k" in value.lower() else value)
-                if weight_str:
-                    entry["weight_kg"] = int(weight_str)
+                weight_match = re.search(r"([\d,]+)\s*kg", value)
+                if weight_match:
+                    entry["weight_kg"] = int(weight_match.group(1).replace(",", ""))
             elif "aspiration" in label:
                 entry["aspiration"] = value
             elif "length" in label:

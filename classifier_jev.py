@@ -3,13 +3,14 @@ import os
 
 from typesafe_sdk import Noul, TypeSafeClient
 
-_THRESHOLD = float(os.environ.get("RELEVANCE_THRESHOLD", "0.50"))
+THRESHOLD = float(os.environ.get("RELEVANCE_THRESHOLD", "0.50"))
+
+_CLIENT = TypeSafeClient()
 
 
 def classify_score(text: str) -> float:
     try:
-        client = TypeSafeClient()
-        response = client.system_one(
+        response = _CLIENT.system_one(
             state=text,
             questions={
                 "relevant": Noul(
@@ -21,7 +22,3 @@ def classify_score(text: str) -> float:
     except Exception as e:
         logging.warning("Classifier error: %s", e)
         return 0.0
-
-
-def is_racing_relevant(text: str) -> bool:
-    return classify_score(text) >= _THRESHOLD

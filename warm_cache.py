@@ -11,40 +11,28 @@ import sys
 import requests
 from dotenv import load_dotenv
 
+from tools.attachments import DISCORD_API, _bot_auth_headers, is_image
+
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s", datefmt="%Y-%m-%dT%H:%M:%S")
 logger = logging.getLogger(__name__)
 
-DISCORD_API = "https://discord.com/api/v10"
-_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
-
-
-def _headers():
-    return {"Authorization": f"Bot {os.environ['DISCORD_TOKEN']}"}
-
-
-def _is_image(att: dict) -> bool:
-    if (att.get("content_type") or "").startswith("image/"):
-        return True
-    url_path = (att.get("url") or "").split("?")[0].lower()
-    return any(url_path.endswith(ext) for ext in _IMAGE_EXTENSIONS)
-
 
 def fetch_pin_image_urls(channel_id: str, max_pins: int = 5) -> list[str]:
-    resp = requests.get(f"{DISCORD_API}/channels/{channel_id}/pins", headers=_headers(), timeout=15)
+    resp = requests.get(f"{DISCORD_API}/channels/{channel_id}/pins", headers=_bot_auth_headers(), timeout=15)
     resp.raise_for_status()
     pins = resp.json()[:max_pins]
     urls = []
     for pin in pins:
         for att in pin.get("attachments", []):
-            if _is_image(att) and att.get("url"):
+            if is_image(att) and att.get("url"):
                 urls.append(att["url"])
     return urls
 
 
 def warm(channel_id: str) -> None:
-    from tools.image_cache import get_cached, set_cached
+    from tools.image_cache import extract_and_cache, get_cached
     from huggingface_hub import InferenceClient
 
     logger.info("fetching pins from channel %s (max 5)", channel_id)
@@ -62,25 +50,8 @@ def warm(channel_id: str) -> None:
             continue
         logger.info("warming %s", url)
         try:
-            response = client.chat.completions.create(
-                model="google/gemma-3-27b-it",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "image_url", "image_url": {"url": url}},
-                            {
-                                "type": "text",
-                                "text": "Extract all text and table data from this image exactly as shown. Preserve table structure as a text table. Do not summarise or interpret — transcribe verbatim.",
-                            },
-                        ],
-                    }
-                ],
-                max_tokens=1500,
-            )
-            result = response.choices[0].message.content or ""
+            result = extract_and_cache(client, url)
             if result:
-                set_cached(url, result)
                 logger.info("cached %d chars for %s", len(result), url)
             else:
                 logger.warning("empty result for %s", url)

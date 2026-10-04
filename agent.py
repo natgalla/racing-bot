@@ -163,15 +163,28 @@ HANDICAP_INSTRUCTIONS = """## Answering handicap questions
 
 HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, get_image_text, calculate_handicap_settings, get_sources]
 GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, get_tuning_recommendations, get_sources]
-PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, get_image_text, get_car_specs, search_cars, get_sources]
+PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, get_car_specs, search_cars, get_sources]
 DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, get_tuning_recommendations, calculate_handicap_settings, get_sources]
+
+
+_MODEL = None
+
+
+def _get_model() -> InferenceClientModel:
+    # Cache the model client across ask() calls — the underlying HF InferenceClient
+    # is reusable, so there is no need to reconstruct it per request.
+    global _MODEL
+    if _MODEL is None:
+        _MODEL = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
+    return _MODEL
 
 
 def build_agent(tools=None):
     if tools is None:
         tools = GENERAL_TOOLS
-    model = InferenceClientModel("Qwen/Qwen2.5-72B-Instruct")
-    return ToolCallingAgent(tools=tools, model=model)
+    # The agent is rebuilt per call because tool context is request-specific,
+    # but the model client is shared via _get_model().
+    return ToolCallingAgent(tools=tools, model=_get_model())
 
 
 def _glossary_for_category(category_name: str | None) -> str:
@@ -185,32 +198,31 @@ def _glossary_for_category(category_name: str | None) -> str:
     return ""
 
 
-def ask(question: str, channel_id: str, guild_id: str, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None, tools: list | None = None, is_dm: bool = False) -> str:
+def _select_tools(is_dm: bool, is_handicap_channel: bool, is_mention: bool) -> list:
+    if is_dm:
+        return DM_TOOLS
+    if is_handicap_channel:
+        return HANDICAP_TOOLS
+    if not is_mention:
+        return PASSIVE_TOOLS
+    return GENERAL_TOOLS
+
+
+def _build_prompt(question: str, channel_id: str, guild_id: str, category_name: str | None, thread_history: str | None, is_mention: bool, author_username: str | None, channel_name: str | None, is_dm: bool, is_handicap_channel: bool) -> str:
     today = datetime.datetime.now(datetime.timezone.utc).date().isoformat()
     date_line = f"Today's date: {today}\n"
+    guild_line = f"Guild ID: {guild_id}\n" if guild_id else ""
     category_line = f"Channel Category: {category_name}\n" if category_name else ""
     glossary = _glossary_for_category(category_name)
     history_section = f"\nConversation so far:\n<user_message>{thread_history}</user_message>\n" if thread_history else ""
     passive_line = "Message type: passive (no @mention — apply SKIP gate)\n" if not is_mention else ""
     author_line = f"Asking user's Discord username: {author_username}\n" if author_username else ""
-    is_handicap_channel = is_dm or unicodedata.normalize("NFC", channel_name or "") == HANDICAP_CHANNEL
-    if tools is not None:
-        agent = build_agent(tools=tools)
-    else:
-        if is_dm:
-            agent = build_agent(tools=DM_TOOLS)
-        elif is_handicap_channel:
-            agent = build_agent(tools=HANDICAP_TOOLS)
-        elif not is_mention:
-            agent = build_agent(tools=PASSIVE_TOOLS)
-        else:
-            agent = build_agent(tools=GENERAL_TOOLS)
     handicap_section = f"\n\n{SERIES_SCHEDULE}\n\n{HANDICAP_INSTRUCTIONS}\n\n{HANDICAP_SYSTEM}" if is_handicap_channel else ""
-    prompt = (
+    return (
         f"{SYSTEM_PROMPT}{glossary}"
         f"{handicap_section}\n\n"
         f"Channel ID: {channel_id}\n"
-        f"Guild ID: {guild_id}\n"
+        f"{guild_line}"
         f"{date_line}"
         f"{category_line}"
         f"{passive_line}"
@@ -218,6 +230,13 @@ def ask(question: str, channel_id: str, guild_id: str, category_name: str | None
         f"{history_section}"
         f"\nQuestion: <user_message>{question}</user_message>"
     )
+
+
+def ask(question: str, channel_id: str, guild_id: str, *, category_name: str | None = None, thread_history: str | None = None, is_mention: bool = True, author_username: str | None = None, channel_name: str | None = None, tools: list | None = None, is_dm: bool = False) -> str:
+    is_handicap_channel = is_dm or unicodedata.normalize("NFC", channel_name or "") == HANDICAP_CHANNEL
+    selected_tools = tools if tools is not None else _select_tools(is_dm, is_handicap_channel, is_mention)
+    prompt = _build_prompt(question, channel_id, guild_id, category_name, thread_history, is_mention, author_username, channel_name, is_dm, is_handicap_channel)
+    agent = build_agent(tools=selected_tools)
     return agent.run(prompt)
 
 

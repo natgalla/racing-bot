@@ -17,8 +17,10 @@ def calculate_handicap_settings(
         power_change_pct: Power adjustment as a signed percentage. Positive = add power (upgrade), negative = reduce power (downgrade). E.g. -2.0 for -2%, 2.0 for +2%.
     """
     final_weight_lbs = round(base_weight_lbs * (1 + weight_change_pct / 100))
+    # 1 kg = 2.205 lbs (standard lbs-per-kilogram conversion factor).
     final_weight_kg = round(final_weight_lbs / 2.205)
     final_power_hp = round(base_power_hp * (1 + power_change_pct / 100))
+    # 1 hp (mechanical) = 1.01387 PS (metric horsepower): 745.7 W / 735.5 W.
     final_power_ps = round(final_power_hp * 1.01387)
     return (
         f"Weight: {final_weight_lbs} lbs ({final_weight_kg} kg) | "
