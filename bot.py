@@ -23,6 +23,7 @@ load_dotenv()
 OWNER_ID = int(os.environ.get("OWNER_ID", 0))
 HANDICAP_CHANNEL_ID = os.environ.get("HANDICAP_CHANNEL_ID", "")
 _pending_approvals: dict[int, dict] = {}
+_agent_semaphore = asyncio.Semaphore(2)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -99,9 +100,10 @@ async def on_message(message):
         dm_channel_id = HANDICAP_CHANNEL_ID or str(message.channel.id)
         logger.info("agent invoked dm=True")
         try:
-            response = await loop.run_in_executor(
-                None, functools.partial(ask, question, dm_channel_id, None, None, thread_history, True, message.author.name, None, None, True)
-            )
+            async with _agent_semaphore:
+                response = await loop.run_in_executor(
+                    None, functools.partial(ask, question, dm_channel_id, None, None, thread_history, True, message.author.name, None, None, True)
+                )
         except Exception as exc:
             logger.error("agent invoked dm=True failed: %s", exc, exc_info=True)
             await message.reply(complication_message())
@@ -166,9 +168,10 @@ async def on_message(message):
 
         logger.info("agent invoked score=%.3f channel=%s", score, channel_name)
         try:
-            response = await loop.run_in_executor(
-                None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name)
-            )
+            async with _agent_semaphore:
+                response = await loop.run_in_executor(
+                    None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, False, message.author.name, channel_name)
+                )
         except Exception as exc:
             logger.error("agent invoked score=%.3f channel=%s failed: %s", score, channel_name, exc, exc_info=True)
             return
@@ -202,9 +205,10 @@ async def on_message(message):
         try:
             async with (thread or message.channel).typing():
                 logger.info("agent invoked channel=%s", channel_name)
-                response = await loop.run_in_executor(
-                    None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, True, message.author.name, channel_name)
-                )
+                async with _agent_semaphore:
+                    response = await loop.run_in_executor(
+                        None, functools.partial(ask, question, str(message.channel.id), str(message.guild.id), category_name, thread_history, True, message.author.name, channel_name)
+                    )
         except Exception as exc:
             logger.error("agent invoked channel=%s failed: %s", channel_name, exc, exc_info=True)
             await send(complication_message())
