@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pull bot.log from the Pi and print DM exchanges (question + response pairs).
+# Pull bot.log from the Pi and print all agent responses (DMs and channel messages).
 # Usage: ./eval.sh [--tail N]   (default: last 50 exchanges)
 
 set -euo pipefail
@@ -16,25 +16,33 @@ while [[ $# -gt 0 ]]; do
 done
 
 ssh "$PI" "cat $REMOTE_LOG" \
-  | grep "dm=True" \
   | grep -E "agent invoked|response=sent|response=SKIP" \
   | tail -n "$(( TAIL_N * 3 ))" \
   | awk '
-    /agent invoked dm=True/ {
+    /agent invoked/ {
       invoked = substr($1, 1, 19)
+      if ($0 ~ /dm=True/) {
+        source = "DM"
+      } else {
+        source = $0
+        sub(/.*channel=/, "", source)
+        source = "channel=" source
+      }
       next
     }
-    /response=sent dm=True/ {
+    /response=sent/ {
       content = $0
       sub(/.*content=/, "", content)
       print "──────────────────────────────"
       print "Time:     " invoked
+      print "Source:   " source
       print "Response: " content
       next
     }
-    /response=SKIP dm=True/ {
+    /response=SKIP/ {
       print "──────────────────────────────"
       print "Time:     " invoked
+      print "Source:   " source
       print "Response: [SKIP]"
       next
     }
