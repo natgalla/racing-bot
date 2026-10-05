@@ -8,6 +8,7 @@ from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild
 from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
 from tools.gtdb_tools import get_car_specs, search_cars
+from tools.spec_tools import find_cars_for_spec
 from tools.tuning_tools import get_tuning_recommendations
 from tools.sources_tools import get_sources
 
@@ -70,6 +71,9 @@ Only report event details that appear verbatim in the tool output — event name
 
 ## GT7 car data
 For GT7 car specs, PP, drivetrain, weight, power, group class, or acquisition questions, prefer get_car_specs and search_cars over web_search — they query a local GT7 car database and are faster and more reliable. Only fall back to web_search for GT7 data that those tools cannot answer.
+
+## Spec eligibility questions
+When a question asks which cars are eligible for a spec defined by a power and/or weight target (e.g. "500hp/3500lbs", "300bhp build", "cars that can hit 400hp"), call find_cars_for_spec. Do not use search_cars for these — search_cars filters by stock stats, not tuning range.
 
 ## Handling and tuning questions
 When a driver describes a handling problem (understeer, oversteer, snapping, instability), call get_tuning_recommendations. Do not guess parameter adjustments from memory.
@@ -207,9 +211,9 @@ LEAGUE_RULES = """## Les Rules des Petits Gâteaux
 - Team switching is not allowed without permission from the series host after the first race of a season. Points earned for a previous team remain with the original team. If a driver who switched teams does not cross the minimum race threshold, their scores are dropped for all teams they raced for."""
 
 HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, get_image_text, calculate_handicap_settings, get_sources]
-GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, get_tuning_recommendations, get_sources]
-PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, get_car_specs, search_cars, get_sources]
-DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, get_tuning_recommendations, calculate_handicap_settings, get_sources]
+GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_sources]
+PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, get_car_specs, search_cars, find_cars_for_spec, get_sources]
+DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, calculate_handicap_settings, get_sources]
 
 
 _MODEL = None
