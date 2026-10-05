@@ -22,6 +22,7 @@ PARAM_LABELS = {
     "lsdAccelRear": "rear LSD accel",
     "lsdDecelRear": "rear LSD decel",
     "torqueDistribution": "AWD torque distribution (front %)",
+    "brakeBalance": "brake balance",
 }
 
 # Each rule: (symptom, phase, parameter, direction, speed, throttle, elevation, drivetrain)
@@ -150,6 +151,17 @@ RULES = [
     ("instability", "exit", "lsdAccelFront", "increase", None, "on-throttle", None, "FF"),
     ("instability", "exit", "torqueDistribution", "increase", None, "on-throttle", None, None),
     ("instability", "exit", "lsdInitRear", "increase", None, None, None, None),
+
+    # ── Brake Balance, Entry (braking) ──
+    ("understeer", "entry", "brakeBalance", "increase", None, "braking", None, None),
+    ("understeer", "entry", "brakeBalance", "increase", None, "braking", None, "FF"),
+    ("oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, None),
+    ("oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, "RR"),
+    ("oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, "MR"),
+    ("snap-oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, None),
+    ("snap-oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, "RR"),
+    ("snap-oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, "MR"),
+    ("instability", "entry", "brakeBalance", "decrease", None, "braking", None, None),
 ]
 
 
@@ -303,3 +315,49 @@ def get_tuning_recommendations(
 
     header = f"Tuning recommendations ({', '.join(context_parts)}):\n"
     return header + "\n".join(lines)
+
+
+BRAKE_BALANCE_BASELINES = {
+    "RR": {
+        "range": "-1 to -2",
+        "reason": "Rear mass overloads rear wheels under braking, causing lockup and snap oversteer on entry. Front bias is essential.",
+    },
+    "MR": {
+        "range": "0 to -1",
+        "reason": "Near-balanced weight. Neutral to slight front bias prevents front lockup without destabilizing the rear.",
+    },
+    "FR": {
+        "range": "+1 to +3",
+        "reason": "Front-heavy layout. Rearward bias lets the rear tyres share braking load and improves rotation on entry.",
+    },
+    "FF": {
+        "range": "+2 to +5",
+        "reason": "Engine, drivetrain, and braking all load the front axle. Strong rear bias unloads the front so the tyres can steer under braking. Start at +3 and go higher if understeer persists.",
+    },
+    "4WD": {
+        "range": "0",
+        "reason": "Inherently balanced under braking. Start neutral and adjust ±1 based on preference — slightly negative for maximum grip, slightly positive for sharper turn-in.",
+    },
+}
+
+
+@tool
+def get_brake_balance_baseline(drivetrain: str) -> str:
+    """Return GT7 brake balance starting-point guidance for a given drivetrain.
+    Call this when a driver asks what brake balance to set, where to start, or what the default should be.
+    Brake balance runs -5 (full front bias) to +5 (full rear bias).
+
+    Args:
+        drivetrain: The car's drivetrain layout. One of: FR, FF, MR, RR, 4WD.
+    """
+    drivetrain = drivetrain.upper().strip()
+    entry = BRAKE_BALANCE_BASELINES.get(drivetrain)
+    if not entry:
+        valid = ", ".join(sorted(BRAKE_BALANCE_BASELINES))
+        return f"Unknown drivetrain '{drivetrain}'. Use one of: {valid}."
+
+    return (
+        f"Brake balance baseline for {drivetrain}: {entry['range']}\n"
+        f"Reason: {entry['reason']}\n"
+        f"Scale: -5 = full front bias, +5 = full rear bias. Adjust from the baseline based on handling symptoms."
+    )

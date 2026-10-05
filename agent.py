@@ -9,7 +9,7 @@ from tools.handicap_tools import calculate_handicap_settings
 from tools.search_tools import web_search
 from tools.gtdb_tools import get_car_specs, search_cars
 from tools.spec_tools import find_cars_for_spec
-from tools.tuning_tools import get_tuning_recommendations
+from tools.tuning_tools import get_tuning_recommendations, get_brake_balance_baseline
 from tools.sources_tools import get_sources
 
 logger = logging.getLogger(__name__)
@@ -84,6 +84,8 @@ When a driver describes a handling problem (understeer, oversteer, snapping, ins
 - End the list with a disclaimer in italics: "*These are starting points — the effect of each change depends on your specific car and setup. Test one change at a time.*"
 - If the driver gives partial context (e.g. only says "oversteer"), call without optional fields rather than asking for every detail upfront.
 - If the conversation history shows tuning recommendations were already given, compare the new tool results against what was previously recommended. Present only net-new suggestions under "Also try:". If the tool returns no new recommendations beyond what was already given, say that explicitly — do not repeat the prior list.
+
+When a driver asks what brake balance to set, where to start, or what the default should be (without describing a specific handling symptom), call get_brake_balance_baseline with the drivetrain. Brake balance runs -5 (full front bias) to +5 (full rear bias). If the drivetrain is not known, resolve it the same way as for get_tuning_recommendations. When a driver describes a braking-phase handling symptom (entry oversteer, snap, understeer under braking), get_tuning_recommendations will include brake balance in its output — do not call get_brake_balance_baseline separately in that case.
 
 ## Game source priority
 When a Channel Category is provided, use it to infer which game is being discussed:
@@ -211,7 +213,7 @@ LEAGUE_RULES = """## Les Rules des Petits Gâteaux
 - Team switching is not allowed without permission from the series host after the first race of a season. Points earned for a previous team remain with the original team. If a driver who switched teams does not cross the minimum race threshold, their scores are dropped for all teams they raced for."""
 
 HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, get_image_text, calculate_handicap_settings, get_sources]
-GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_sources]
+GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_brake_balance_baseline, get_sources]
 PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, get_car_specs, search_cars, find_cars_for_spec, get_sources]
 DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, calculate_handicap_settings, get_sources]
 
