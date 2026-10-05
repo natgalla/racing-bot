@@ -30,6 +30,14 @@ _USER_AGENT = (
 _GTDB_BASE = "https://gtdb.io"
 
 
+def _parse_year(name: str) -> int | None:
+    m = re.search(r"'(\d{2})(?:\s|$)", name)
+    if not m:
+        return None
+    yy = int(m.group(1))
+    return 1900 + yy if yy >= 27 else 2000 + yy
+
+
 def _load_json(path: str) -> dict:
     if os.path.exists(path):
         try:
@@ -138,6 +146,7 @@ def _scrape_list() -> list[dict]:
                 "make": make,
                 "slug": slug,
                 "pp": pp,
+                "year": _parse_year(name),
                 "acquisition_source": acquisition_source,
                 "price_cr": price_cr,
                 "tags": tags,
@@ -260,7 +269,11 @@ def get_list_cache() -> list[dict]:
     with _LIST_LOCK:
         data = _load_json(_LIST_CACHE_PATH)
         if _is_list_cache_fresh(data):
-            return data.get("cars", [])
+            cars = data.get("cars", [])
+            for car in cars:
+                if "year" not in car:
+                    car["year"] = _parse_year(car["name"])
+            return cars
         cars = _scrape_list()
         _save_json(
             _LIST_CACHE_PATH,

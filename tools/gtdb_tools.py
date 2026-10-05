@@ -15,6 +15,9 @@ def _format_detail(detail: dict) -> str:
     make = detail.get("make", "")
     display_name = f"{make} {name}".strip() if make and make not in name else name
 
+    year = gtdb_cache._parse_year(detail.get("name", ""))
+    year_str = str(year) if year else "N/A"
+
     pp = detail.get("pp")
     group = detail.get("group", "N/A")
     drivetrain = detail.get("drivetrain", "N/A")
@@ -43,7 +46,7 @@ def _format_detail(detail: dict) -> str:
 
     lines = [
         display_name,
-        f"PP: {pp} | Group: {group} | Drivetrain: {drivetrain} | Aspiration: {aspiration}",
+        f"Year: {year_str} | PP: {pp} | Group: {group} | Drivetrain: {drivetrain} | Aspiration: {aspiration}",
         f"Power: {power} | Torque: {torque}",
         f"Weight: {weight_str} | Displacement: {displacement}",
         f"Tags: {tags_str}",
@@ -133,6 +136,10 @@ def search_cars(filters: str) -> str:
             Supported keys:
               pp_min (float) — minimum Performance Points, e.g. 450.0
               pp_max (float) — maximum Performance Points, e.g. 500.0
+              year_min (int) — minimum model year, e.g. 2015. List-level filter: does NOT require a
+                PP range and does NOT count against the 50-car detail guard.
+              year_max (int) — maximum model year, e.g. 2020. List-level filter: does NOT require a
+                PP range and does NOT count against the 50-car detail guard.
               weight_max (int, kg) — maximum car weight in kilograms, e.g. 1200
               power_min (int, BHP) — minimum power output in BHP, e.g. 300
               drivetrain (str) — layout code: "FR", "MR", "FF", or "4WD"
@@ -158,6 +165,8 @@ def search_cars(filters: str) -> str:
 
     pp_min = f.get("pp_min")
     pp_max = f.get("pp_max")
+    year_min = f.get("year_min")
+    year_max = f.get("year_max")
     required_tags = f.get("tags", [])
     detail_filters = {
         k: f[k] for k in ("weight_max", "power_min", "drivetrain", "group") if k in f
@@ -171,6 +180,14 @@ def search_cars(filters: str) -> str:
             continue
         if pp_max is not None and (pp is None or pp > pp_max):
             continue
+        if year_min is not None:
+            y = car.get("year")
+            if y is None or y < year_min:
+                continue
+        if year_max is not None:
+            y = car.get("year")
+            if y is None or y > year_max:
+                continue
         if required_tags:
             car_tags = car.get("tags", [])
             if not all(t in car_tags for t in required_tags):
@@ -249,7 +266,8 @@ def search_cars(filters: str) -> str:
         display = f"{make} {name}".strip() if make and make not in name else name
         pp = car.get("pp", "N/A")
         tags = ", ".join(car.get("tags", [])) or "N/A"
-        lines.append(f"{display} | PP: {pp} | Tags: {tags}")
+        year_str = f" ({car['year']})" if car.get("year") else ""
+        lines.append(f"{display}{year_str} | PP: {pp} | Tags: {tags}")
 
     result = "\n".join(lines)
     if total > 30:
