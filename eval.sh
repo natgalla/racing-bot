@@ -16,9 +16,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 ssh "$PI" "cat $REMOTE_LOG" \
-  | grep -E "agent invoked|response=sent|response=SKIP" \
-  | tail -n "$(( TAIL_N * 3 ))" \
-  | awk '
+  | grep -E "agent invoked|response=sent|response=SKIP|reaction emoji=" \
+  | awk -v tail_n="$TAIL_N" '
     /agent invoked/ {
       invoked = substr($1, 1, 19)
       if ($0 ~ /dm=True/) {
@@ -31,19 +30,39 @@ ssh "$PI" "cat $REMOTE_LOG" \
       next
     }
     /response=sent/ {
-      content = $0
-      sub(/.*content=/, "", content)
-      print "──────────────────────────────"
-      print "Time:     " invoked
-      print "Source:   " source
-      print "Response: " content
+      mid = $0; sub(/.*message_id=/, "", mid); sub(/ .*/, "", mid)
+      content = $0; sub(/.*content=/, "", content)
+      responses[mid] = content
+      times[mid] = invoked
+      sources[mid] = source
+      order[++count] = mid
       next
     }
     /response=SKIP/ {
-      print "──────────────────────────────"
-      print "Time:     " invoked
-      print "Source:   " source
-      print "Response: [SKIP]"
+      mid = "skip_" NR
+      responses[mid] = "[SKIP]"
+      times[mid] = invoked
+      sources[mid] = source
+      order[++count] = mid
       next
+    }
+    /reaction emoji=/ {
+      mid = $0; sub(/.*message_id=/, "", mid); sub(/ .*/, "", mid)
+      emoji = $0; sub(/.*reaction emoji=/, "", emoji); sub(/ .*/, "", emoji)
+      if (mid in responses) {
+        reactions[mid] = (reactions[mid] == "") ? emoji : reactions[mid] " " emoji
+      }
+      next
+    }
+    END {
+      start = (count > tail_n) ? count - tail_n + 1 : 1
+      for (i = start; i <= count; i++) {
+        mid = order[i]
+        print "──────────────────────────────"
+        print "Time:     " times[mid]
+        print "Source:   " sources[mid]
+        print "Response: " responses[mid]
+        if (mid in reactions) print "Reactions: " reactions[mid]
+      }
     }
   '

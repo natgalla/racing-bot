@@ -34,6 +34,19 @@ No test framework, no linter configured. `test_local.py` is the only testing har
 
 The bot runs on a Raspberry Pi at `gateaubot.local`. SSH access is via key auth (`pi@gateaubot.local`). The bot process and log (`bot.log`) live at `~/racing-bot/` on the Pi.
 
+To deploy changes:
+
+```bash
+# 1. Push from local
+git push
+
+# 2. Pull on the Pi
+ssh pi@gateaubot.local "cd ~/racing-bot && git pull"
+
+# 3. Restart the bot
+ssh pi@gateaubot.local "sudo systemctl restart racing-bot"
+```
+
 User messages are intentionally not logged (privacy).
 
 ### Evaluating DM responses
