@@ -207,6 +207,15 @@ async def on_message(message):
             return
 
     question = message.content.replace(f"<@{client.user.id}>", "").strip()
+    question_anchor = message  # message that the thread/reply will attach to
+    if not question and message.reference is not None:
+        try:
+            ref_msg = await message.channel.fetch_message(message.reference.message_id)
+            question = re.sub(r"<a?:[^:]+:\d+>|<@!?\d+>|<#\d+>|<@&\d+>", "", ref_msg.content).strip()
+            if question:
+                question_anchor = ref_msg
+        except discord.HTTPException:
+            pass
     if not question:
         await message.reply("I'm here if you need help with the race spec, schedule, or any GT7 questions. 🤖")
         return
@@ -272,10 +281,10 @@ async def on_message(message):
             logger.info("response=sent score=%.3f message_id=%s channel=%s content=%s", score, sent.id, channel_name, response)
     else:
         try:
-            thread = await message.create_thread(name=_thread_name(question))
+            thread = await question_anchor.create_thread(name=_thread_name(question))
             send = thread.send
         except discord.HTTPException:
-            send = message.reply
+            send = question_anchor.reply
             thread = None
         try:
             async with (thread or message.channel).typing():
