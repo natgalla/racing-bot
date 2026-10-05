@@ -222,7 +222,7 @@ LEAGUE_RULES = """## Les Rules des Petits Gâteaux
 HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, get_image_text, calculate_handicap_settings, get_sources]
 GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_brake_balance_baseline, get_sources]
 PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, get_car_specs, search_cars, find_cars_for_spec, get_sources]
-DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, calculate_handicap_settings, get_sources]
+DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_brake_balance_baseline, calculate_handicap_settings, get_sources]
 
 
 _MODEL = None

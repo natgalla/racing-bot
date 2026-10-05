@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 import requests
 from bs4 import BeautifulSoup
 
-from .file_utils import atomic_write_json
+from .file_utils import atomic_write_json, load_json
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ _USER_AGENT = (
 _GTDB_BASE = "https://gtdb.io"
 
 
-def _parse_year(name: str) -> int | None:
+def parse_year(name: str) -> int | None:
     m = re.search(r"'(\d{2})(?:\s|$)", name)
     if not m:
         return None
@@ -39,16 +39,7 @@ def _parse_year(name: str) -> int | None:
 
 
 def _load_json(path: str) -> dict:
-    if os.path.exists(path):
-        try:
-            with open(path) as f:
-                data = json.load(f)
-            if not isinstance(data, dict):
-                return {}
-            return data
-        except Exception:
-            logger.exception("gtdb_cache: failed to load %s", path)
-    return {}
+    return load_json(path, logger)
 
 
 def _save_json(path: str, data: dict) -> None:
@@ -146,7 +137,7 @@ def _scrape_list() -> list[dict]:
                 "make": make,
                 "slug": slug,
                 "pp": pp,
-                "year": _parse_year(name),
+                "year": parse_year(name),
                 "acquisition_source": acquisition_source,
                 "price_cr": price_cr,
                 "tags": tags,
@@ -272,7 +263,7 @@ def get_list_cache() -> list[dict]:
             cars = data.get("cars", [])
             for car in cars:
                 if "year" not in car:
-                    car["year"] = _parse_year(car["name"])
+                    car["year"] = parse_year(car["name"])
             return cars
         cars = _scrape_list()
         _save_json(

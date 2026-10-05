@@ -153,14 +153,11 @@ RULES = [
     ("instability", "exit", "lsdInitRear", "increase", None, None, None, None),
 
     # ── Brake Balance, Entry (braking) ──
+    # Drivetrain-specific rules that duplicate the general None rule have been removed:
+    # the general rule already covers FF/RR/MR/FR/4WD. Only keep the general rules.
     ("understeer", "entry", "brakeBalance", "increase", None, "braking", None, None),
-    ("understeer", "entry", "brakeBalance", "increase", None, "braking", None, "FF"),
     ("oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, None),
-    ("oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, "RR"),
-    ("oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, "MR"),
     ("snap-oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, None),
-    ("snap-oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, "RR"),
-    ("snap-oversteer", "entry", "brakeBalance", "decrease", None, "braking", None, "MR"),
     ("instability", "entry", "brakeBalance", "decrease", None, "braking", None, None),
 ]
 

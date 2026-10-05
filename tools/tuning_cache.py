@@ -10,7 +10,7 @@ import requests
 from rapidfuzz import fuzz, process
 
 from . import gtdb_cache
-from .file_utils import atomic_write_json
+from .file_utils import atomic_write_json, load_json
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +42,7 @@ _STOCK_POWER_COL = "Stock Horsepower"
 
 
 def _load_json(path: str) -> dict:
-    if os.path.exists(path):
-        try:
-            with open(path) as f:
-                data = json.load(f)
-            if not isinstance(data, dict):
-                return {}
-            return data
-        except Exception:
-            logger.exception("tuning_cache: failed to load %s", path)
-    return {}
+    return load_json(path, logger)
 
 
 def _save_json(path: str, data: dict) -> None:
@@ -134,9 +125,24 @@ def _build_cache() -> dict:
     return data
 
 
+def get_all_tuning() -> dict:
+    """Return the full by_slug tuning dict, loading the cache once."""
+    with _LOCK:
+        data = _load_json(_CACHE_PATH)
+        if not _is_cache_fresh(data):
+            try:
+                data = _build_cache()
+            except Exception:
+                logger.exception("tuning_cache: failed to build cache; using stale data")
+        return data.get("by_slug", {})
+
+
 def get_tuning(slug: str) -> dict | None:
     with _LOCK:
         data = _load_json(_CACHE_PATH)
         if not _is_cache_fresh(data):
-            data = _build_cache()
+            try:
+                data = _build_cache()
+            except Exception:
+                logger.exception("tuning_cache: failed to build cache; using stale data")
         return data.get("by_slug", {}).get(slug)

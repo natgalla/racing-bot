@@ -71,9 +71,11 @@ def find_cars_for_spec(
                 continue
         survivors.append(car)
 
+    all_tuning = tuning_cache.get_all_tuning()
+
     matched = []
     for car in survivors:
-        tuning = tuning_cache.get_tuning(car["slug"])
+        tuning = all_tuning.get(car["slug"])
         if target_power_bhp > 0:
             if not tuning or tuning.get("max_power_bhp") is None:
                 continue
@@ -88,8 +90,8 @@ def find_cars_for_spec(
             continue
         matched.append((car, tuning))
 
-    drivetrain_fetched = bool(drivetrain.strip())
-    if drivetrain_fetched:
+    drivetrain_filter = bool(drivetrain.strip())
+    if drivetrain_filter:
         if len(matched) > 50:
             return (
                 f"Too many cars match the power/weight/year/make/tag filters ({len(matched)} results) "
@@ -118,7 +120,7 @@ def find_cars_for_spec(
     capped = matched[:30]
     lines = []
     for entry in capped:
-        if drivetrain_fetched:
+        if drivetrain_filter:
             car, tuning, detail = entry
         else:
             car, tuning = entry
@@ -153,7 +155,7 @@ def find_cars_for_spec(
         if stock_bits:
             parts.append("Stock: " + " / ".join(stock_bits))
 
-        if drivetrain_fetched and detail is not None:
+        if drivetrain_filter and detail is not None:
             drv = detail.get("drivetrain", "")
             if drv:
                 parts.append(drv)

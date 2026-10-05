@@ -287,7 +287,7 @@ async def on_message(message):
             send = question_anchor.reply
             thread = None
         try:
-            async with (thread or message.channel).typing():
+            async with (thread or question_anchor.channel).typing():
                 logger.info("agent invoked channel=%s", channel_name)
                 async with _agent_semaphore:
                     response = await loop.run_in_executor(

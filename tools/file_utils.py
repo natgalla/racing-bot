@@ -7,6 +7,20 @@ import tempfile
 logger = logging.getLogger(__name__)
 
 
+def load_json(path: str, logger) -> dict:
+    """Load JSON from a file, returning an empty dict on any error or if the file is missing."""
+    if os.path.exists(path):
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return {}
+            return data
+        except Exception:
+            logger.exception("failed to load %s", path)
+    return {}
+
+
 def atomic_write_json(path: str, data) -> None:
     """Write JSON to a temp file in the same directory then atomically replace.
 

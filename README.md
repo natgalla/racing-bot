@@ -21,6 +21,9 @@ Direct messages to the bot are also supported. DMs skip the classifier and categ
 - DM support — ask the bot directly in a direct message
 - Handicap channel (`le-club-des-petits-gâteaux`) — series schedule, points formula, and image-extracted adjustment tables drive deterministic weight/power calculations
 - Owner approval flow — when `OWNER_ID` is set, passive responses are DMed to the owner for a reaction (✅ to post, ❌ to discard) before going public
+- Spec eligibility search — find cars that can be tuned to a power/weight target
+- Brake balance guidance — starting-point brake balance by drivetrain layout
+- Reply-to-mention — @mentioning the bot in a reply to another message uses the replied message as the question
 
 ## Setup
 
@@ -58,6 +61,23 @@ RELEVANCE_THRESHOLD=0.50  # optional, default 0.50
 ```bash
 python bot.py
 ```
+
+## Deploy
+
+The bot runs on a Raspberry Pi at `gateaubot.local`. To deploy changes:
+
+1. Push from local:
+   ```bash
+   git push
+   ```
+2. Pull on the Pi:
+   ```bash
+   ssh pi@gateaubot.local "cd ~/racing-bot && git pull"
+   ```
+3. Restart the bot:
+   ```bash
+   ssh pi@gateaubot.local "sudo systemctl restart racing-bot"
+   ```
 
 ## Testing locally
 

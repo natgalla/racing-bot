@@ -15,7 +15,7 @@ def _format_detail(detail: dict) -> str:
     make = detail.get("make", "")
     display_name = f"{make} {name}".strip() if make and make not in name else name
 
-    year = gtdb_cache._parse_year(detail.get("name", ""))
+    year = gtdb_cache.parse_year(detail.get("name", ""))
     year_str = str(year) if year else "N/A"
 
     pp = detail.get("pp")
