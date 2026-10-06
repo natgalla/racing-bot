@@ -7,7 +7,6 @@ Run via cron before race nights so get_image_text returns instantly during agent
 """
 import logging
 import os
-import sys
 import requests
 from dotenv import load_dotenv
 
@@ -59,10 +58,25 @@ def warm(channel_id: str) -> None:
             logger.error("failed to warm %s: %s", url, exc)
 
 
+HANDICAP_CHANNEL_ID = "1113237975262834769"
+
+
+def warm_pins() -> None:
+    from tools.discord_tools import get_channel_pins
+    from tools.pin_cache import get_cached_pins
+
+    if get_cached_pins(HANDICAP_CHANNEL_ID) is not None:
+        logger.info("pin cache hit — skipping %s", HANDICAP_CHANNEL_ID)
+        return
+    logger.info("warming pin cache for %s", HANDICAP_CHANNEL_ID)
+    try:
+        result = get_channel_pins(HANDICAP_CHANNEL_ID)
+        logger.info("cached %d chars of pins for %s", len(result), HANDICAP_CHANNEL_ID)
+    except Exception as exc:
+        logger.error("failed to warm pins for %s: %s", HANDICAP_CHANNEL_ID, exc)
+
+
 if __name__ == "__main__":
-    channel_id = os.environ.get("HANDICAP_CHANNEL_ID", "").strip()
-    if not channel_id:
-        logger.error("HANDICAP_CHANNEL_ID not set in .env")
-        sys.exit(1)
-    warm(channel_id)
+    warm(HANDICAP_CHANNEL_ID)
+    warm_pins()
     logger.info("done")

@@ -6,5 +6,6 @@ gtdb_list_cache.json
 gtdb_detail_cache.json
 gtplanet_tuning_cache.json
 image_cache.json
+pin_cache.json
 bot.log
 bot.log.*

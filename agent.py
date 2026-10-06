@@ -5,7 +5,7 @@ import random
 import unicodedata
 from smolagents import ToolCallingAgent, InferenceClientModel
 from tools.discord_tools import get_channel_pins, get_recent_messages, get_guild_events, get_image_text
-from tools.handicap_tools import calculate_handicap_settings
+from tools.handicap_tools import calculate_handicap_settings, convert_units
 from tools.search_tools import web_search
 from tools.gtdb_tools import get_car_specs, search_cars
 from tools.spec_tools import find_cars_for_spec
@@ -186,6 +186,14 @@ When asked how many races remain, how far into the series we are, or whether the
 5. If no standings image exists yet, fall back to date math: count Wednesdays since the series start date."""
 
 HANDICAP_INSTRUCTIONS = """## Answering handicap questions
+Before fetching anything, check if the message already contains all required values:
+- Base weight (lbs or kg)
+- Base power (hp or PS)
+- The driver's total adjustment points or percentages
+
+If ALL THREE are explicit in the message, skip directly to step 3 (call calculate_handicap_settings). Do not call get_channel_pins or get_image_text when you already have the numbers.
+
+If any value is missing:
 1. Call get_channel_pins. You are looking for two things:
    - The spec handicap package: a pin annotated [Spec handicap package: detunes + up-tunes] containing two image attachments. This pin marks the series start. Call get_image_text on both image URLs to get the detune and up-tune adjustment tables. The pin date is the series anchor — the series start is the first Wednesday on or after that date.
    - The race spec pin: contains the canonical base weight and power for the current car.
@@ -219,10 +227,10 @@ LEAGUE_RULES = """## Les Rules des Petits Gâteaux
 - Team livery requirement: it should be obvious which team a driver is on at a glance.
 - Team switching is not allowed without permission from the series host after the first race of a season. Points earned for a previous team remain with the original team. If a driver who switched teams does not cross the minimum race threshold, their scores are dropped for all teams they raced for."""
 
-HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, get_image_text, calculate_handicap_settings, get_sources]
-GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_brake_balance_baseline, get_sources]
-PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, get_car_specs, search_cars, find_cars_for_spec, get_sources]
-DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_brake_balance_baseline, calculate_handicap_settings, get_sources]
+HANDICAP_TOOLS = [get_channel_pins, get_recent_messages, get_image_text, calculate_handicap_settings, convert_units, get_sources]
+GENERAL_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_brake_balance_baseline, convert_units, get_sources]
+PASSIVE_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, get_car_specs, search_cars, find_cars_for_spec, convert_units, get_sources]
+DM_TOOLS = [get_channel_pins, get_recent_messages, get_guild_events, web_search, get_image_text, get_car_specs, search_cars, find_cars_for_spec, get_tuning_recommendations, get_brake_balance_baseline, calculate_handicap_settings, convert_units, get_sources]
 
 
 _MODEL = None

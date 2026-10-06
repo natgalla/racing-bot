@@ -5,6 +5,7 @@ from datetime import datetime
 from smolagents import tool
 from .attachments import DISCORD_API, _bot_auth_headers, is_image
 from .image_cache import extract_and_cache
+from .pin_cache import get_cached_pins, set_cached_pins
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,9 @@ def get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
         channel_id: The Discord channel ID to fetch pins from.
         max_pins: Maximum number of pins to return (default 5, newest first).
     """
+    cached = get_cached_pins(channel_id)
+    if cached is not None:
+        return cached
     resp = requests.get(f"{DISCORD_API}/channels/{channel_id}/pins", headers=_bot_auth_headers(), timeout=20)
     if resp.status_code != 200:
         logger.error("get_channel_pins failed: %s %s", resp.status_code, resp.text)
@@ -41,7 +45,9 @@ def get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
     pins = resp.json()
     pins = pins[:max_pins]
     if not pins:
-        return "No pinned messages found in this channel."
+        result = "No pinned messages found in this channel."
+        set_cached_pins(channel_id, result)
+        return result
     sections = []
     for p in pins:
         has_pinned_at = bool(p.get("pinned_at"))
@@ -66,7 +72,9 @@ def get_channel_pins(channel_id: str, max_pins: int = 5) -> str:
         parts += image_lines
         body = "\n".join(filter(None, parts))
         sections.append(f"{pin_header}\n{body}")
-    return "\n\n---\n\n".join(sections)
+    result = "\n\n---\n\n".join(sections)
+    set_cached_pins(channel_id, result)
+    return result
 
 
 @tool

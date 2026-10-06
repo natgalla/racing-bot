@@ -26,3 +26,34 @@ def calculate_handicap_settings(
         f"Weight: {final_weight_lbs} lbs ({final_weight_kg} kg) | "
         f"Power: {final_power_hp} hp ({final_power_ps} PS)"
     )
+
+
+@tool
+def convert_units(value: float, from_unit: str, to_unit: str) -> str:
+    """Convert between weight and power units used in GT7 handicap settings.
+
+    Supported conversions:
+    - lbs ↔ kg  (weight)
+    - hp ↔ PS   (power; 1 hp = 1.01387 PS)
+
+    Args:
+        value: The numeric value to convert.
+        from_unit: Source unit. One of: lbs, kg, hp, PS
+        to_unit: Target unit. One of: lbs, kg, hp, PS
+
+    Returns:
+        Converted value rounded to the nearest whole number, with units.
+    """
+    pair = (from_unit, to_unit)
+    if pair == ("lbs", "kg"):
+        converted = value / 2.205
+    elif pair == ("kg", "lbs"):
+        converted = value * 2.205
+    elif pair == ("hp", "PS"):
+        converted = value * 1.01387
+    elif pair == ("PS", "hp"):
+        converted = value / 1.01387
+    else:
+        raise ValueError(f"Unsupported conversion: {from_unit} to {to_unit}. Supported: lbs<->kg, hp<->PS.")
+    return f"{round(converted)} {to_unit}"
+
