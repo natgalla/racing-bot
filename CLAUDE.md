@@ -89,6 +89,11 @@ Discord message
 | `tools/tuning_tools.py` | Handling symptom → tuning parameter recommendations |
 | `tools/sources_tools.py` | Returns data source attribution for the bot |
 | `tools/image_cache.py` | Image URL → extracted text via LLM vision model, file-backed cache |
+| `tools/pin_cache.py` | Pinned message fetch with 8-hour TTL file-backed cache |
+| `tools/spec_tools.py` | `find_cars_for_spec()` — filter GT7 car list by power/weight/drivetrain/make |
+| `tools/tuning_cache.py` | GTPlanet tuning data fetch and file-backed cache backing `tuning_tools.py` |
+| `tools/attachments.py` | Shared Discord attachment helpers and bot auth headers |
+| `tools/file_utils.py` | Shared JSON I/O utilities (`atomic_write_json`, `load_json`) used by cache modules |
 | `eval.sh` | Pull and display recent DM responses from the Pi log |
 
 ### SKIP gate
@@ -101,7 +106,7 @@ Messages in `le-club-des-petits-gâteaux` get additional system-prompt context: 
 
 ### Caching
 
-Both `gtdb_cache.py` and `image_cache.py` write JSON to local files. Cache files should not be committed. The GT7 car list has a 30-day TTL; detail pages are cached indefinitely until manually cleared.
+Cache modules write JSON to local files. Cache files should not be committed. The GT7 car list has a 30-day TTL; detail pages are cached indefinitely until manually cleared. Pinned messages are cached for 8 hours (`pin_cache.json`). GTPlanet tuning data is cached with its own TTL via `tuning_cache.py`.
 
 ## Environment
 
