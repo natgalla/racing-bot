@@ -44,7 +44,7 @@ RULES = [
     ("understeer", "mid", "bodyHeightFront", "decrease", "high", None, None, None),
     ("understeer", "mid", "bodyHeightRear", "increase", "high", None, None, None),
     ("understeer", "mid", "torqueDistribution", "decrease", None, None, None, None),
-    ("understeer", "mid", "lsdInitRear", "decrease", None, None, None, None),
+    ("understeer", "mid", "lsdInitRear", "increase", None, None, None, None),
     ("understeer", "mid", "lsdInitFront", "decrease", None, None, None, "FF"),
 
     # ── Understeer, Exit ──
